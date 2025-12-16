@@ -7,7 +7,7 @@ use crate::{
     data_types::{WfData, WfDataType, types_def::WfTypeGeneric},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WfStandardType {
     pub identity_ref: Zid,
     keys: WfData,
@@ -36,5 +36,9 @@ impl WfDataType for WfStandardType {
 
     fn into_wf_data(self) -> WfData {
         WfData::WfType(WfTypeGeneric::WfStandardType(Box::new(self)))
+    }
+
+    fn is_fully_realised(&self) -> bool {
+        true
     }
 }

@@ -13,6 +13,10 @@ pub struct WfBoolean {
 }
 
 impl WfBoolean {
+    pub fn new(value: bool) -> Self {
+        Self { value }
+    }
+
     pub fn parse(
         mut data: BTreeMap<Zid, WfData>,
         context: &ExecutionContext,
@@ -77,6 +81,10 @@ impl WfDataType for WfBoolean {
         }
     }
 
+    fn is_fully_realised(&self) -> bool {
+        true
+    }
+
     fn into_wf_data(self) -> WfData {
         WfData::WfBoolean(self)
     }
@@ -90,12 +98,13 @@ mod tests {
 
     use crate::{
         ExecutionContext, GlobalContext,
-        data_types::{WfBoolean, WfData},
+        data_types::{WfBoolean, WfData, WfDataType, WfReference},
     };
 
     #[test]
     fn test_parse() {
-        let global_context = Arc::new(GlobalContext::default());
+        let global_context = Arc::new(GlobalContext::default_for_test());
+        let context = ExecutionContext::default_for_global(global_context);
 
         // simple case, direct reference
         let boolean_construct = WfData::from_map(btree_map! {
@@ -103,10 +112,33 @@ mod tests {
             zid!(40, 1) => WfData::new_reference(zid!(42))
         });
         assert_eq!(
-            boolean_construct
-                .parse_boolean(&ExecutionContext::default_for_global(global_context))
-                .unwrap(),
-            WfBoolean { value: true }
+            boolean_construct.parse_boolean(&context).unwrap(),
+            WfBoolean::new(true)
         );
+
+        // simple case, reference
+        assert_eq!(
+            WfReference::new(zid!(41))
+                .into_wf_data()
+                .parse_boolean(&context)
+                .unwrap(),
+            WfBoolean::new(true)
+        );
+
+        // test correct return on failure
+        let incorrect_boolean = WfData::from_map(btree_map! {
+            zid!(1, 1) => WfData::new_reference(zid!(40)),
+            zid!(40, 1) => WfData::new_reference(zid!(39))
+        });
+        let incorrect_boolean_clone = incorrect_boolean.clone();
+        assert!(
+            incorrect_boolean
+                .parse_boolean(&context)
+                .unwrap_err()
+                .1
+                .equality(incorrect_boolean_clone, &context)
+                .unwrap()
+                .0
+        )
     }
 }

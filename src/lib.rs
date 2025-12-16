@@ -1,5 +1,3 @@
-#![feature(box_into_inner)]
-
 #[macro_use]
 mod zid;
 pub use zid::Zid;

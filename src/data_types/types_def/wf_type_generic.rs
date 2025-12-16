@@ -5,7 +5,7 @@ use crate::{
     data_types::{WfData, WfDataType, types_def::WfStandardType},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum WfTypeGeneric {
     WfStandardType(Box<WfStandardType>),
     // TODO: typed pair
@@ -46,6 +46,12 @@ impl WfTypeGeneric {
     pub fn get_type_zid(&self) -> Result<Zid, EvalError> {
         match self {
             Self::WfStandardType(standard) => Ok(standard.identity_ref),
+        }
+    }
+
+    pub fn is_fully_realised(&self) -> bool {
+        match self {
+            Self::WfStandardType(v) => v.is_fully_realised(),
         }
     }
 }

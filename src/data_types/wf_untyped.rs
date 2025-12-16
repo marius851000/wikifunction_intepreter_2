@@ -5,7 +5,7 @@ use crate::{
     data_types::{WfBoolean, WfData, WfDataType, types_def::WfTypeGeneric},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct WfUntyped {
     entry: BTreeMap<Zid, WfData>,
 }
@@ -20,6 +20,10 @@ impl WfDataType for WfUntyped {
     // should not resolve themself if they are reference
     fn into_map_no_follow(self) -> BTreeMap<Zid, WfData> {
         self.entry
+    }
+
+    fn is_fully_realised(&self) -> bool {
+        false
     }
 
     fn into_wf_data(self) -> WfData {

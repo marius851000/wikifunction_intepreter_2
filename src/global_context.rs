@@ -19,4 +19,18 @@ impl GlobalContext {
             })
             .map(|x| x.clone())?)
     }
+
+    #[cfg(test)]
+    pub fn default_for_test() -> Self {
+        use map_macro::btree_map;
+
+        use crate::data_types::{WfBoolean, WfDataType};
+
+        Self {
+            objects: btree_map! {
+                zid!(41) => WfBoolean::new(true).into_wf_data(),
+                zid!(42) => WfBoolean::new(false).into_wf_data()
+            },
+        }
+    }
 }

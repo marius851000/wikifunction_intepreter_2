@@ -7,7 +7,7 @@ use crate::{
     data_types::{WfData, WfDataType, WfString},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct WfReference {
     pub to: Zid,
 }
@@ -24,6 +24,10 @@ impl WfDataType for WfReference {
             zid!(1, 1) => WfData::new_reference(zid!(9)),
             zid!(9, 1) => WfString::new(self.to.to_string()).into_wf_data(),
         }
+    }
+
+    fn is_fully_realised(&self) -> bool {
+        return false;
     }
 
     fn into_wf_data(self) -> WfData {
