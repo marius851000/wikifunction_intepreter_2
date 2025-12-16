@@ -1,5 +1,7 @@
 use std::{collections::BTreeMap, num::NonZeroU32};
 
+use enum_dispatch::enum_dispatch;
+
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, Zid,
     data_types::{
@@ -9,6 +11,7 @@ use crate::{
 
 /// A type that reference one of the data type in a memory efficient way. And also it isn’t dyn-compatible?
 #[derive(Debug, Clone, PartialEq)]
+#[enum_dispatch(WfDataType)]
 pub enum WfData {
     WfBoolean(WfBoolean),
     WfReference(WfReference),
@@ -26,49 +29,6 @@ impl WfData {
         WfData::WfUntyped(WfUntyped::new(map))
     }
 
-    pub fn into_map(
-        self,
-        context: &ExecutionContext,
-    ) -> Result<BTreeMap<Zid, WfData>, (EvalError, WfData)> {
-        match self {
-            Self::WfBoolean(d) => d.into_map(context),
-            Self::WfReference(d) => d.into_map(context),
-            Self::WfString(d) => d.into_map(context),
-            Self::WfUntyped(d) => d.into_map(context),
-            Self::WfType(d) => d.into_map(context),
-        }
-    }
-
-    pub fn into_map_no_follow(self) -> BTreeMap<Zid, WfData> {
-        match self {
-            Self::WfBoolean(d) => d.into_map_no_follow(),
-            Self::WfReference(d) => d.into_map_no_follow(),
-            Self::WfString(d) => d.into_map_no_follow(),
-            Self::WfUntyped(d) => d.into_map_no_follow(),
-            Self::WfType(d) => d.into_map_no_follow(),
-        }
-    }
-
-    pub fn get_reference(self, context: &ExecutionContext) -> Result<Zid, (EvalError, WfData)> {
-        match self {
-            Self::WfBoolean(d) => d.get_reference(context),
-            Self::WfReference(d) => d.get_reference(context),
-            Self::WfString(d) => d.get_reference(context),
-            Self::WfUntyped(d) => d.get_reference(context),
-            Self::WfType(d) => d.get_reference(context),
-        }
-    }
-
-    pub fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, WfData)> {
-        match self {
-            Self::WfBoolean(d) => d.evaluate(context),
-            Self::WfReference(d) => d.evaluate(context),
-            Self::WfString(d) => d.evaluate(context),
-            Self::WfUntyped(d) => d.evaluate(context),
-            Self::WfType(_d) => todo!("type evaluate"),
-        }
-    }
-
     pub fn parse_boolean(self, context: &ExecutionContext) -> Result<WfBoolean, (EvalError, Self)> {
         match self {
             Self::WfBoolean(ready) => Ok(ready),
@@ -83,16 +43,6 @@ impl WfData {
         match self {
             Self::WfType(ready) => Ok(ready),
             other => WfTypeGeneric::parse(other, context),
-        }
-    }
-
-    pub fn is_fully_realised(&self) -> bool {
-        match self {
-            Self::WfBoolean(v) => v.is_fully_realised(),
-            Self::WfReference(v) => v.is_fully_realised(),
-            Self::WfString(v) => v.is_fully_realised(),
-            Self::WfType(v) => v.is_fully_realised(),
-            Self::WfUntyped(v) => v.is_fully_realised(),
         }
     }
 
