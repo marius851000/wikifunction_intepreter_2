@@ -43,8 +43,6 @@ impl WfDataType for WfTypedListType {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use crate::{
         ExecutionContext, GlobalContext, RcI,
         data_types::{
@@ -56,7 +54,7 @@ mod tests {
     #[test]
     fn test_get_list_key() {
         let global_context = GlobalContext::default_for_test();
-        let context = ExecutionContext::default_for_global(Arc::new(global_context));
+        let context = ExecutionContext::default_for_global(RcI::new(global_context));
         let boolean_type = WfData::new_reference(zid!(40)).evaluate(&context).unwrap();
         let boolean_type_clone = boolean_type.clone();
         let test_typed_list_typed = WfTypedListType {

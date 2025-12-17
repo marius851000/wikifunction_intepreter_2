@@ -1,13 +1,11 @@
-use std::sync::Arc;
-
-use crate::GlobalContext;
+use crate::{GlobalContext, RcI};
 
 pub struct ExecutionContext {
-    global_context: Arc<GlobalContext>,
+    global_context: RcI<GlobalContext>,
 }
 
 impl ExecutionContext {
-    pub fn default_for_global(global_context: Arc<GlobalContext>) -> Self {
+    pub fn default_for_global(global_context: RcI<GlobalContext>) -> Self {
         Self { global_context }
     }
 

@@ -53,24 +53,12 @@ pub fn parse_object(source: &Object) -> Result<WfData, LoadError> {
 }
 
 /// Depending on the formatting, may return either a reference or a string.
-/// String that looks like a reference are handling in parse_object
+/// String that looks like a reference are handled in parse_object
 pub fn parse_str(source: &str) -> Result<WfData, LoadError> {
-    match source.chars().next() {
-        None => Ok(WfString::new(source).into_wf_data()),
-        Some(first_char) => {
-            if first_char.is_ascii_uppercase() {
-                match first_char {
-                    'Z' => {
-                        let zid = Zid::from_str(source)
-                            .map_err(|e| LoadError::CantParseZID(source.to_string(), e))?;
-                        Ok(WfReference::new(zid).into_wf_data())
-                    }
-                    _ => Err(LoadError::UpperCaseFirstCharOutsideZ6(source.to_string())),
-                }
-            } else {
-                Ok(WfString::new(source).into_wf_data())
-            }
-        }
+    // the reference appear to "uppercase latin followed by a numeral", yet Z3K1 doesn’t seems to be escaped. Going to assume everything that isn’t a Zid is a string.
+    match Zid::from_str(source) {
+        Ok(zid) => Ok(WfReference::new(zid).into_wf_data()),
+        Err(_) => Ok(WfString::new(source).into_wf_data()),
     }
 }
 
@@ -111,6 +99,10 @@ mod tests {
             parse_object(&from_str::<Object>(r#"{"Z1K1": "Z6", "Z6K1": "Z4"}"#).unwrap()).unwrap(),
             WfString::new("Z4").into_wf_data()
         );
+        assert_eq!(
+            parse_str("Z4K1").unwrap(),
+            WfString::new("Z4K1").into_wf_data()
+        );
         assert_eq!(parse_str("p4").unwrap(), WfString::new("p4").into_wf_data());
         assert_eq!(parse_str("").unwrap(), WfString::new("").into_wf_data());
     }
@@ -121,10 +113,6 @@ mod tests {
             parse_str("Z4").unwrap(),
             WfReference::new(zid!(4)).into_wf_data()
         );
-
-        parse_str("Z4K1").unwrap_err();
-        parse_str("K4").unwrap_err();
-        parse_str("P4").unwrap_err();
     }
 
     #[test]

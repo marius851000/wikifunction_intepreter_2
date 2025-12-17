@@ -27,4 +27,6 @@ pub use global_context::GlobalContext;
 mod bench;
 
 use std::rc::Rc;
-type RcI<T> = Rc<T>;
+/// Global lock to be used for everything in this interpreter that is stored inside of GlobalContext.
+/// May be (eventually optionally) switched to an Arc in the future for multi-threading.
+pub type RcI<T> = Rc<T>;

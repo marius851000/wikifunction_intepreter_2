@@ -7,12 +7,12 @@ use crate::{KeyIndex, KeyIndexParseError, ZidParseError};
 pub enum LoadError {
     #[error("Couldn’t parse Key index {0}")]
     CantParseKeyIndex(String, #[source] KeyIndexParseError),
-    #[error("Can’t parse ZID")]
+    #[error("Can’t parse ZID {0:?}")]
     CantParseZID(String, #[source] ZidParseError),
     #[error("inside object entry {0}")]
-    InsideMap(KeyIndex, Box<LoadError>),
+    InsideMap(KeyIndex, #[source] Box<LoadError>),
     #[error("inside array entry {0}")]
-    InsideArray(usize, Box<LoadError>),
+    InsideArray(usize, #[source] Box<LoadError>),
     #[error("unsupported data type in {0}")]
     InvalidDataType(Value),
     #[error("Extra field {0:?} in a String ZObject")]

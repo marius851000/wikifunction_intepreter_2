@@ -141,18 +141,16 @@ impl WfData {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use map_macro::btree_map;
 
     use crate::{
-        ExecutionContext, GlobalContext,
+        ExecutionContext, GlobalContext, RcI,
         data_types::{WfBoolean, WfData, WfDataType},
     };
 
     #[test]
     fn test_equality() {
-        let global_context = Arc::new(GlobalContext::default_for_test());
+        let global_context = RcI::new(GlobalContext::default_for_test());
         let context = ExecutionContext::default_for_global(global_context);
 
         // test fast equality. Those object are invalid, and will fail if evaluated, but it won’t need to.

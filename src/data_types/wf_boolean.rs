@@ -86,18 +86,16 @@ impl WfDataType for WfBoolean {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use map_macro::btree_map;
 
     use crate::{
-        ExecutionContext, GlobalContext,
+        ExecutionContext, GlobalContext, RcI,
         data_types::{WfBoolean, WfData, WfDataType},
     };
 
     #[test]
     fn test_parse() {
-        let global_context = Arc::new(GlobalContext::default_for_test());
+        let global_context = RcI::new(GlobalContext::default_for_test());
         let context = ExecutionContext::default_for_global(global_context);
 
         // simple case, direct reference

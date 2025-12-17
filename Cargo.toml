@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.100"
 map-macro = "0.3.0"
+parse_mediawiki_dump_reboot = "1.0.2"
 serde = { version = "1.0.228", features = ["derive"] }
 sonic-rs = "0.5.6"
 thiserror = "2.0.17"
