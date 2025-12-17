@@ -22,7 +22,7 @@ impl WfBoolean {
         match data.get_key(zid!(1, 1)) {
             None => return Err((EvalError::missing_key(zid!(1, 1)), data)),
             Some(r#type) => match r#type.check_type_by_zid(zid!(40), context) {
-                Err((e, content)) => {
+                Err((e, _content)) => {
                     return Err((e.inside(zid!(1, 1)), data));
                 }
                 Ok(_) => (),

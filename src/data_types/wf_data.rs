@@ -1,7 +1,5 @@
 use std::{collections::BTreeMap, num::NonZeroU32};
 
-use enum_dispatch::enum_dispatch;
-
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, Zid,
     data_types::{

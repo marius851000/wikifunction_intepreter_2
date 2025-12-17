@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, rc::Rc};
+use std::collections::BTreeMap;
 
 use crate::{
     EvalError, ExecutionContext, RcI, Zid,

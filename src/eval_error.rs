@@ -21,6 +21,7 @@ pub enum EvalErrorKind {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)] //TODO:
 pub enum TraceEntry {
     Inside(Zid),
     Text(String),

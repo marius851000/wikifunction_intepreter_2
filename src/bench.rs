@@ -1,14 +1,14 @@
 #[cfg(test)]
 mod benches {
     extern crate test;
-    use std::{collections::BTreeMap, rc::Rc, sync::Arc};
+    use std::{rc::Rc, sync::Arc};
 
     use map_macro::btree_map;
     use test::Bencher;
 
     fn create_test_data<T: Clone, F: Fn() -> T>(f: F) -> Vec<T> {
         let mut source_vec: Vec<T> = Vec::with_capacity(1000);
-        for i in 0..5 {
+        for _ in 0..5 {
             let contended: T = f();
             for _ in 0..100 {
                 source_vec.push(contended.clone());
