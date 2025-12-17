@@ -13,7 +13,8 @@ pub trait WfDataType: Debug + Clone {
     fn list_keys(&self) -> Vec<KeyIndex>; //TODO: some iterator?
 
     /// Follow references and all that -- recursively. Default to returning self.
-    /// Also need to guarantee the data is correct. It shouldn’t return a WfUntyped.
+    /// Also need to guarantee the returned data is correct. It shouldn’t return a WfUntyped.
+    /// (datas in the input that do not need to be evaluate, and so that doesn’t impact the final result, may be invalid without triggering an error)
     fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
         Ok(self.into_wf_data())
     }

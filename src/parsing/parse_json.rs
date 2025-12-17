@@ -1,16 +1,21 @@
 use std::collections::BTreeMap;
 
-use sonic_rs::{JsonValueTrait, Object, Value, ValueRef};
+use sonic_rs::{Array, JsonValueTrait, Object, Value, ValueRef};
 
 use crate::{
-    KeyIndex, Zid,
-    data_types::{WfData, WfDataType, WfReference, WfString, WfUntyped},
+    KeyIndex, RcI, Zid,
+    data_types::{
+        WfData, WfDataType, WfReference, WfString, WfUncheckedTypedList, WfUncheckedTypedListInner,
+        WfUntyped,
+    },
     parsing::LoadError,
 };
 
 pub fn parse_value(source: &Value) -> Result<WfData, LoadError> {
     match source.as_ref() {
-        ValueRef::Object(object) => Ok(parse_object(object)?.into_wf_data()),
+        ValueRef::Object(object) => Ok(parse_object(object)?),
+        ValueRef::String(text) => Ok(parse_str(text)?),
+        ValueRef::Array(array) => Ok(parse_array(array)?),
         _ => Err(LoadError::InvalidDataType(source.clone())),
     }
 }
@@ -69,17 +74,39 @@ pub fn parse_str(source: &str) -> Result<WfData, LoadError> {
     }
 }
 
+pub fn parse_array(array: &Array) -> Result<WfData, LoadError> {
+    let mut iterator = array.iter();
+    let type_value = iterator.next().ok_or(LoadError::EmptyArray)?;
+    let r#type = parse_value(type_value).map_err(|e| LoadError::InsideArray(0, Box::new(e)))?;
+
+    let mut entries = Vec::with_capacity(array.len());
+    for (loop_count, value) in iterator.enumerate() {
+        entries.push(
+            parse_value(value).map_err(|e| LoadError::InsideArray(loop_count + 1, Box::new(e)))?,
+        );
+    }
+
+    Ok(
+        WfUncheckedTypedList(RcI::new(WfUncheckedTypedListInner { r#type, entries }))
+            .into_wf_data(),
+    )
+}
+
 #[cfg(test)]
 mod tests {
-    use sonic_rs::{Object, from_str};
+    use sonic_rs::{Array, Object, from_str};
 
     use crate::{
-        data_types::{WfDataType, WfReference, WfString},
-        parsing::parse_json::{parse_object, parse_str},
+        RcI,
+        data_types::{
+            WfData, WfDataType, WfReference, WfString, WfUncheckedTypedList,
+            WfUncheckedTypedListInner,
+        },
+        parsing::parse_json::{parse_array, parse_object, parse_str},
     };
 
     #[test]
-    pub fn test_load_strings() {
+    fn test_load_strings() {
         assert_eq!(
             parse_object(&from_str::<Object>(r#"{"Z1K1": "Z6", "Z6K1": "Z4"}"#).unwrap()).unwrap(),
             WfString::new("Z4").into_wf_data()
@@ -89,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_load_reference() {
+    fn test_load_reference() {
         assert_eq!(
             parse_str("Z4").unwrap(),
             WfReference::new(zid!(4)).into_wf_data()
@@ -98,5 +125,23 @@ mod tests {
         parse_str("Z4K1").unwrap_err();
         parse_str("K4").unwrap_err();
         parse_str("P4").unwrap_err();
+    }
+
+    #[test]
+    fn test_array() {
+        assert_eq!(
+            parse_array(&from_str::<Array>(r#"["Z6", "hello", "world"]"#).unwrap()).unwrap(),
+            WfData::WfUncheckedTypedList(WfUncheckedTypedList(RcI::new(
+                WfUncheckedTypedListInner {
+                    r#type: WfData::new_reference(zid!(6)),
+                    entries: vec![
+                        WfString::new("hello").into_wf_data(),
+                        WfString::new("world").into_wf_data()
+                    ]
+                }
+            )))
+        );
+
+        parse_array(&from_str::<Array>(r#"[]"#).unwrap()).unwrap_err();
     }
 }

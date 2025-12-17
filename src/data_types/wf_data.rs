@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, num::NonZeroU32};
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
     data_types::{
-        WfBoolean, WfDataType, WfInvalid, WfReference, WfString, WfUntyped,
+        WfBoolean, WfDataType, WfInvalid, WfReference, WfString, WfUncheckedTypedList, WfUntyped,
         types_def::WfTypeGeneric,
     },
 };
@@ -11,12 +11,14 @@ use crate::{
 /// A type that reference one of the data type in a memory efficient way. And also it isn’t dyn-compatible?
 #[derive(Debug, Clone, PartialEq)]
 pub enum WfData {
+    // let’s try to keep that at no more than 24 bytes long on 64 bit machine.
     WfBoolean(WfBoolean),
     WfReference(WfReference),
     WfString(WfString),
     WfUntyped(WfUntyped),
     WfType(WfTypeGeneric),
     WfInvalid(WfInvalid),
+    WfUncheckedTypedList(WfUncheckedTypedList),
 }
 
 impl_wf_data_type!(
@@ -27,7 +29,8 @@ impl_wf_data_type!(
     WfString(d),
     WfUntyped(d),
     WfType(d),
-    WfInvalid(d)
+    WfInvalid(d),
+    WfUncheckedTypedList(d)
 );
 
 impl WfData {
