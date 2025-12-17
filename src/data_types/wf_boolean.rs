@@ -37,9 +37,9 @@ impl WfBoolean {
         match identity.get_reference(context) {
             Ok(reference) => {
                 if reference == zid!(41) {
-                    Ok(Self { value: true })
-                } else if reference == zid!(42) {
                     Ok(Self { value: false })
+                } else if reference == zid!(42) {
+                    Ok(Self { value: true })
                 } else {
                     return Err((
                         EvalError::from_kind(EvalErrorKind::IncorrectIdentityForBoolean(reference)),
@@ -67,8 +67,8 @@ impl WfDataType for WfBoolean {
             Some(WfData::new_reference(zid!(40)))
         } else if key == zid!(40, 1) {
             match self.value {
-                false => Some(WfData::new_reference(zid!(41))),
-                true => Some(WfData::new_reference(zid!(42))),
+                true => Some(WfData::new_reference(zid!(41))),
+                false => Some(WfData::new_reference(zid!(42))),
             }
         } else {
             None

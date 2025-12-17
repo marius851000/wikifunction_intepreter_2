@@ -1,10 +1,6 @@
-use std::collections::BTreeMap;
-
-use map_macro::btree_map;
-
 use crate::{
     EvalError, ExecutionContext, Zid,
-    data_types::{WfData, WfDataType, WfString},
+    data_types::{WfData, WfDataType},
 };
 
 #[derive(Debug, Clone, PartialEq)]

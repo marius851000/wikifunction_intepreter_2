@@ -34,20 +34,29 @@ pub trait WfDataType: Debug + Clone {
 ///   inner field that implements `WfDataType`.
 ///
 /// Example usage:
-/// ```
+/// ```ignore
+/// use interpreter2::impl_wf_data_type;
+/// use interpreter2::data_types::{WfBoolean, WfString};
+///
+/// enum WfBooleanOrString {
+///     WfBoolean(WfBoolean),
+///     WfString(WfString),
+/// }
+///
 /// impl_wf_data_type!(
-///     WfTypeGeneric,
-///     |this| WfData::WfType(this),
-///     WfStandardType(d)
+///     WfBooleanOrString,
+///     |this| this.into_wf_data(),
+///     WfBoolean(d),
+///     WfString(d)
 /// );
 /// ```
 ///
-/// Thanks gpt-oss:20b (with barely one mistake)
+/// Thanks gpt-oss:20b (with barely one mistake. And doctest that did not ran. Not that I suceeded too.)
 #[macro_export]
 macro_rules! impl_wf_data_type {
     ($Struct:ident, $into_wf_data_expr:expr, $( $variant:ident ($inner:ident) ),+ ) => {
-        impl WfDataType for $Struct {
-            fn into_wf_data(self) -> WfData {
+        impl crate::data_types::WfDataType for $Struct {
+            fn into_wf_data(self) -> crate::data_types::WfData {
                 $into_wf_data_expr(self)
             }
 
@@ -57,32 +66,32 @@ macro_rules! impl_wf_data_type {
                 }
             }
 
-            fn get_identity_key(&self) -> Option<Zid> {
+            fn get_identity_key(&self) -> Option<crate::Zid> {
                 match self {
                     $(Self::$variant($inner) => $inner.get_identity_key(),)+
                 }
             }
 
-            fn get_key(&self, key: Zid) -> Option<WfData> {
+            fn get_key(&self, key: crate::Zid) -> Option<crate::data_types::WfData> {
                 match self {
                     $(Self::$variant($inner) => $inner.get_key(key),)+
                 }
             }
 
-            fn list_keys(&self) -> Vec<Zid> {
+            fn list_keys(&self) -> Vec<crate::Zid> {
                 match self {
                     $(Self::$variant($inner) => $inner.list_keys(),)+
                 }
             }
 
-            fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+            fn evaluate(self, context: &crate::ExecutionContext) -> Result<crate::data_types::WfData, (crate::EvalError, Self)> {
                 match self {
                     $(Self::$variant($inner) =>
                         $inner.evaluate(context).map_err(|(e, p)| (e, Self::$variant(p))),)+
                 }
             }
 
-            fn get_reference(self, context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
+            fn get_reference(self, context: &crate::ExecutionContext) -> Result<crate::Zid, (crate::EvalError, Self)> {
                 match self {
                     $(Self::$variant($inner) =>
                         $inner.get_reference(context).map_err(|(e, p)| (e, Self::$variant(p))),)+
