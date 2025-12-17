@@ -28,7 +28,7 @@ impl WfDataType for WfReference {
     }
 
     fn is_fully_realised(&self) -> bool {
-        return false;
+        false
     }
 
     fn into_wf_data(self) -> WfData {

@@ -34,7 +34,7 @@ impl WfDataType for WfString {
     }
 
     fn is_fully_realised(&self) -> bool {
-        return true;
+        true
     }
 
     fn into_wf_data(self) -> WfData {

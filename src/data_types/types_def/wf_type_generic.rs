@@ -15,9 +15,9 @@ impl WfTypeGeneric {
     pub fn parse(data: WfData, _context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
         // we know this isn’t a reference, not it is a function. The type-function (linked list, etc) should already be dereferenced.
         match data {
-            WfData::WfType(r#type) => return Ok(r#type),
+            WfData::WfType(r#type) => Ok(r#type),
             _other => todo!(),
-        };
+        }
     }
 
     pub fn get_type_zid(&self) -> Result<Zid, EvalError> {
@@ -27,8 +27,4 @@ impl WfTypeGeneric {
     }
 }
 
-impl_wf_data_type!(
-    WfTypeGeneric,
-    |this| WfData::WfType(this),
-    WfStandardType(d)
-);
+impl_wf_data_type!(WfTypeGeneric, WfData::WfType, WfStandardType(d));

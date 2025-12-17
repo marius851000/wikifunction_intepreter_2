@@ -81,11 +81,11 @@ impl WfData {
             let this_equality = match value_first.equality(value_second, context) {
                 Ok(v) => v,
                 Err((e, error_source_which)) => {
-                    return Err((e.inside(key.clone()), error_source_which));
+                    return Err((e.inside(key), error_source_which));
                 }
             };
 
-            if this_equality == false {
+            if !this_equality {
                 return Ok(false);
             }
         }
@@ -114,15 +114,11 @@ impl WfData {
         self,
         context: &ExecutionContext,
     ) -> Result<(Zid, WfData), (EvalError, WfData)> {
-        match &self {
-            Self::WfReference(reference) => {
-                if let Some(z) = reference.to.get_z() {
-                    if z < NonZeroU32::new(100).unwrap() {
-                        return Ok((reference.to, self));
-                    }
-                }
-            }
-            _ => (),
+        if let Self::WfReference(reference) = &self
+            && let Some(z) = reference.to.get_z()
+            && z < NonZeroU32::new(100).unwrap()
+        {
+            return Ok((reference.to, self));
         }
         // slow path
         let r#type = self.parse_type(context)?;

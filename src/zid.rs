@@ -27,14 +27,14 @@ impl Zid {
         let before_key = k_splitted
             .next()
             .context("input text should not be empty")
-            .map_err(|e| EvalErrorKind::ParseZid(e))?;
+            .map_err(EvalErrorKind::ParseZid)?;
 
         let z = if !before_key.is_empty() {
             let mut char_id_iter = before_key.chars();
             if char_id_iter
                 .next()
                 .context("text before K/end of string should not be empty")
-                .map_err(|e| EvalErrorKind::ParseZid(e))?
+                .map_err(EvalErrorKind::ParseZid)?
                 != 'Z'
             {
                 return Err(EvalErrorKind::ParseZid(anyhow!(
@@ -42,9 +42,11 @@ impl Zid {
                 )));
             }
             Some(
-                u32::from_str_radix(char_id_iter.as_str(), 10)
+                char_id_iter
+                    .as_str()
+                    .parse()
                     .context("Can’t convert the first number part of the ZID to a u32 number")
-                    .map_err(|e| EvalErrorKind::ParseZid(e))?,
+                    .map_err(EvalErrorKind::ParseZid)?,
             )
         } else {
             None
@@ -52,9 +54,10 @@ impl Zid {
 
         let k = if let Some(second_part) = k_splitted.next() {
             Some(
-                u32::from_str_radix(second_part, 10)
+                second_part
+                    .parse()
                     .context("Could not parse post-key text as u32")
-                    .map_err(|e| EvalErrorKind::ParseZid(e))?,
+                    .map_err(EvalErrorKind::ParseZid)?,
             )
         } else {
             None
@@ -66,7 +69,7 @@ impl Zid {
             )));
         }
 
-        Ok(Zid::from_u32s(z, k)?)
+        Zid::from_u32s(z, k)
     }
 
     pub fn from_u32s(z: Option<u32>, k: Option<u32>) -> Result<Self, EvalErrorKind> {
@@ -80,7 +83,7 @@ impl Zid {
                 Some(
                     NonZeroU32::try_from(z)
                         .context("z should be non-zero")
-                        .map_err(|e| EvalErrorKind::ParseZid(e))?,
+                        .map_err(EvalErrorKind::ParseZid)?,
                 )
             } else {
                 None
@@ -89,7 +92,7 @@ impl Zid {
                 Some(
                     NonZeroU32::try_from(k)
                         .context("k should be non-zero")
-                        .map_err(|e| EvalErrorKind::ParseZid(e))?,
+                        .map_err(EvalErrorKind::ParseZid)?,
                 )
             } else {
                 None
@@ -122,12 +125,10 @@ impl Zid {
             } else {
                 format!("Z{}", z)
             }
+        } else if let Some(k) = self.1 {
+            format!("K{}", k)
         } else {
-            if let Some(k) = self.1 {
-                format!("K{}", k)
-            } else {
-                unreachable!("z and k should be both null");
-            }
+            unreachable!("z and k should be both null");
         }
     }
 }

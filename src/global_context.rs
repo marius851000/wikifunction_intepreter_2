@@ -11,13 +11,10 @@ pub struct GlobalContext {
 
 impl GlobalContext {
     pub fn get_object_value(&self, zid: &Zid) -> Result<WfData, EvalError> {
-        Ok(self
-            .objects
+        self.objects
             .get(zid)
-            .ok_or_else(|| {
-                EvalError::from_kind(EvalErrorKind::MissingPersistentObject(zid.clone()))
-            })
-            .map(|x| x.clone())?)
+            .ok_or_else(|| EvalError::from_kind(EvalErrorKind::MissingPersistentObject(*zid)))
+            .cloned()
     }
 
     #[cfg(test)]

@@ -15,18 +15,16 @@ impl WfBoolean {
 
     /// assume the data is dereferenced (but may be untyped)
     pub fn parse(data: WfData, context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
-        match data {
-            WfData::WfBoolean(v) => return Ok(v),
-            _ => (),
+        if let WfData::WfBoolean(v) = data {
+            return Ok(v);
         };
         match data.get_key(zid!(1, 1)) {
             None => return Err((EvalError::missing_key(zid!(1, 1)), data)),
-            Some(r#type) => match r#type.check_type_by_zid(zid!(40), context) {
-                Err((e, _content)) => {
+            Some(r#type) => {
+                if let Err((e, _content)) = r#type.check_type_by_zid(zid!(40), context) {
                     return Err((e.inside(zid!(1, 1)), data));
                 }
-                Ok(_) => (),
-            },
+            }
         };
 
         let identity = match data.get_key(zid!(40, 1)) {
@@ -41,17 +39,15 @@ impl WfBoolean {
                 } else if reference == zid!(42) {
                     Ok(Self { value: true })
                 } else {
-                    return Err((
+                    Err((
                         EvalError::from_kind(EvalErrorKind::IncorrectIdentityForBoolean(reference)),
                         data,
-                    ));
+                    ))
                 }
             }
             Err((_err, identity)) => match Self::parse(identity, context) {
                 Ok(v) => Ok(v),
-                Err((e, _)) => {
-                    return Err((e.inside(zid!(40, 1)), data));
-                }
+                Err((e, _)) => Err((e.inside(zid!(40, 1)), data)),
             },
         }
     }

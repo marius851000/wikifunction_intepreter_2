@@ -19,9 +19,8 @@ impl WfUntyped {
 
     /// Will need fail (outside of eventual panic due to program error related to wrongly implemented interface)
     pub fn parse(data: WfData) -> Self {
-        match data {
-            WfData::WfUntyped(this) => return this,
-            _ => (),
+        if let WfData::WfUntyped(this) = data {
+            return this;
         };
 
         let mut result = BTreeMap::new();
@@ -40,11 +39,11 @@ impl WfDataType for WfUntyped {
     }
 
     fn get_key(&self, key: Zid) -> Option<WfData> {
-        self.entry.get(&key).map(|x| x.clone())
+        self.entry.get(&key).cloned()
     }
 
     fn list_keys(&self) -> Vec<Zid> {
-        self.entry.keys().map(|x| *x).collect()
+        self.entry.keys().copied().collect()
     }
 
     fn is_fully_realised(&self) -> bool {

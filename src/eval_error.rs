@@ -58,13 +58,13 @@ impl EvalError {
 
 impl Error for EvalError {
     fn cause(&self) -> Option<&dyn Error> {
-        return Some(&self.kind);
+        Some(&self.kind)
     }
 }
 
 //TODO: a proper error display
 impl Display for EvalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Ok(std::fmt::Debug::fmt(&self, f)?)
+        std::fmt::Debug::fmt(&self, f)
     }
 }
