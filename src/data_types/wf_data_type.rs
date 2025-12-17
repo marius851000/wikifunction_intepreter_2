@@ -1,16 +1,16 @@
 use std::fmt::Debug;
 
-use crate::{EvalError, EvalErrorKind, ExecutionContext, Zid, data_types::WfData};
+use crate::{EvalError, EvalErrorKind, ExecutionContext, KeyIndex, data_types::WfData};
 
 pub trait WfDataType: Debug + Clone {
     fn into_wf_data(self) -> WfData;
     /// used to know that this structure is one of the final type. Used to know that inequality mean two object with this property does not represent the same thing.
     fn is_fully_realised(&self) -> bool;
-    fn get_identity_key(&self) -> Option<Zid>;
+    fn get_identity_key(&self) -> Option<KeyIndex>;
     /// does not evaluate
-    fn get_key(&self, key: Zid) -> Option<WfData>;
+    fn get_key(&self, key: KeyIndex) -> Option<WfData>;
     /// does not evaluate
-    fn list_keys(&self) -> Vec<Zid>; //TODO: some iterator?
+    fn list_keys(&self) -> Vec<KeyIndex>; //TODO: some iterator?
 
     /// Follow references and all that -- recursively. Default to returning self.
     /// Also need to guarantee the data is correct. It shouldn’t return a WfUntyped.
@@ -18,7 +18,7 @@ pub trait WfDataType: Debug + Clone {
         Ok(self.into_wf_data())
     }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
+    fn get_reference(self, _context: &ExecutionContext) -> Result<KeyIndex, (EvalError, Self)> {
         Err((EvalError::from_kind(EvalErrorKind::NotAReference), self))
     }
 }
@@ -64,19 +64,19 @@ macro_rules! impl_wf_data_type {
                 }
             }
 
-            fn get_identity_key(&self) -> Option<$crate::Zid> {
+            fn get_identity_key(&self) -> Option<$crate::KeyIndex> {
                 match self {
                     $(Self::$variant($inner) => $inner.get_identity_key(),)+
                 }
             }
 
-            fn get_key(&self, key: $crate::Zid) -> Option<$crate::data_types::WfData> {
+            fn get_key(&self, key: $crate::KeyIndex) -> Option<$crate::data_types::WfData> {
                 match self {
                     $(Self::$variant($inner) => $inner.get_key(key),)+
                 }
             }
 
-            fn list_keys(&self) -> Vec<$crate::Zid> {
+            fn list_keys(&self) -> Vec<$crate::KeyIndex> {
                 match self {
                     $(Self::$variant($inner) => $inner.list_keys(),)+
                 }
@@ -89,7 +89,7 @@ macro_rules! impl_wf_data_type {
                 }
             }
 
-            fn get_reference(self, context: &$crate::ExecutionContext) -> Result<$crate::Zid, ($crate::EvalError, Self)> {
+            fn get_reference(self, context: &$crate::ExecutionContext) -> Result<$crate::KeyIndex, ($crate::EvalError, Self)> {
                 match self {
                     $(Self::$variant($inner) =>
                         $inner.get_reference(context).map_err(|(e, p)| (e, Self::$variant(p))),)+

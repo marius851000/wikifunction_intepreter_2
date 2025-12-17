@@ -1,10 +1,10 @@
 #![feature(test)]
 
 #[macro_use]
-mod zid;
+mod key_index;
 use std::rc::Rc;
 
-pub use zid::{Zid, ZidParseError};
+pub use key_index::{KeyIndex, KeyIndexParseError};
 
 pub mod data_types;
 

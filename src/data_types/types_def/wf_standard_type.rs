@@ -1,11 +1,11 @@
 use crate::{
-    RcI, Zid,
+    KeyIndex, RcI,
     data_types::{WfData, WfDataType, types_def::WfTypeGeneric},
 };
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct WfStandardTypeInner {
-    pub identity_ref: Zid,
+    pub identity_ref: KeyIndex,
     pub keys: WfData,
     pub validator: WfData,
     pub equality: WfData,
@@ -29,45 +29,45 @@ impl From<WfStandardTypeInner> for WfStandardType {
 }
 
 impl WfDataType for WfStandardType {
-    fn get_identity_key(&self) -> Option<Zid> {
-        Some(zid!(4, 1))
+    fn get_identity_key(&self) -> Option<KeyIndex> {
+        Some(keyindex!(4, 1))
     }
 
-    fn get_key(&self, key: Zid) -> Option<WfData> {
-        if key == zid!(1, 1) {
-            Some(WfData::new_reference(zid!(4)))
-        } else if key == zid!(4, 1) {
+    fn get_key(&self, key: KeyIndex) -> Option<WfData> {
+        if key == keyindex!(1, 1) {
+            Some(WfData::new_reference(keyindex!(4)))
+        } else if key == keyindex!(4, 1) {
             Some(WfData::new_reference(self.inner.identity_ref))
-        } else if key == zid!(4, 2) {
+        } else if key == keyindex!(4, 2) {
             Some(self.inner.keys.clone())
-        } else if key == zid!(4, 3) {
+        } else if key == keyindex!(4, 3) {
             Some(self.inner.validator.clone())
-        } else if key == zid!(4, 4) {
+        } else if key == keyindex!(4, 4) {
             Some(self.inner.equality.clone())
-        } else if key == zid!(4, 5) {
+        } else if key == keyindex!(4, 5) {
             Some(self.inner.display_function.clone())
-        } else if key == zid!(4, 6) {
+        } else if key == keyindex!(4, 6) {
             Some(self.inner.reading_function.clone())
-        } else if key == zid!(4, 7) {
+        } else if key == keyindex!(4, 7) {
             Some(self.inner.type_converters_to_code.clone())
-        } else if key == zid!(4, 8) {
+        } else if key == keyindex!(4, 8) {
             Some(self.inner.type_converters_from_code.clone())
         } else {
             None
         }
     }
 
-    fn list_keys(&self) -> Vec<Zid> {
+    fn list_keys(&self) -> Vec<KeyIndex> {
         vec![
-            zid!(1, 1),
-            zid!(4, 1),
-            zid!(4, 2),
-            zid!(4, 3),
-            zid!(4, 4),
-            zid!(4, 5),
-            zid!(4, 6),
-            zid!(4, 7),
-            zid!(4, 8),
+            keyindex!(1, 1),
+            keyindex!(4, 1),
+            keyindex!(4, 2),
+            keyindex!(4, 3),
+            keyindex!(4, 4),
+            keyindex!(4, 5),
+            keyindex!(4, 6),
+            keyindex!(4, 7),
+            keyindex!(4, 8),
         ]
     }
     fn into_wf_data(self) -> WfData {

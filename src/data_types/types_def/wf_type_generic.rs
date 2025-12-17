@@ -1,5 +1,5 @@
 use crate::{
-    EvalError, EvalErrorKind, ExecutionContext, Zid,
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex,
     data_types::{
         WfData,
         types_def::{WfStandardType, WfTypedListType},
@@ -22,7 +22,7 @@ impl WfTypeGeneric {
         }
     }
 
-    pub fn get_type_zid(&self) -> Result<Zid, EvalError> {
+    pub fn get_type_zid(&self) -> Result<KeyIndex, EvalError> {
         match self {
             Self::WfStandardType(standard) => Ok(standard.inner.identity_ref),
             _ => Err(EvalError::from_kind(EvalErrorKind::NotStandardType)),

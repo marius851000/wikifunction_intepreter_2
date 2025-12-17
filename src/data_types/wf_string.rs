@@ -1,5 +1,5 @@
 use crate::{
-    RcI, Zid,
+    KeyIndex, RcI,
     data_types::{WfData, WfDataType},
 };
 
@@ -15,22 +15,22 @@ impl WfString {
 }
 
 impl WfDataType for WfString {
-    fn get_identity_key(&self) -> Option<Zid> {
-        Some(zid!(6, 1)) // that’s quite a special case, but still a valid identity
+    fn get_identity_key(&self) -> Option<KeyIndex> {
+        Some(keyindex!(6, 1)) // that’s quite a special case, but still a valid identity
     }
 
-    fn get_key(&self, key: Zid) -> Option<WfData> {
-        if key == zid!(1, 1) {
-            Some(WfData::new_reference(zid!(6)))
-        } else if key == zid!(6, 1) {
+    fn get_key(&self, key: KeyIndex) -> Option<WfData> {
+        if key == keyindex!(1, 1) {
+            Some(WfData::new_reference(keyindex!(6)))
+        } else if key == keyindex!(6, 1) {
             Some(self.clone().into_wf_data())
         } else {
             None
         }
     }
 
-    fn list_keys(&self) -> Vec<Zid> {
-        vec![zid!(1, 1), zid!(6, 1)]
+    fn list_keys(&self) -> Vec<KeyIndex> {
+        vec![keyindex!(1, 1), keyindex!(6, 1)]
     }
 
     fn is_fully_realised(&self) -> bool {

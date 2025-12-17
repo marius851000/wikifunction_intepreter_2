@@ -1,5 +1,5 @@
 use crate::{
-    EvalErrorKind, Zid,
+    EvalErrorKind, KeyIndex,
     data_types::{WfData, WfDataType},
 };
 
@@ -15,15 +15,15 @@ impl WfInvalid {
 }
 
 impl WfDataType for WfInvalid {
-    fn get_key(&self, _key: Zid) -> Option<WfData> {
+    fn get_key(&self, _key: KeyIndex) -> Option<WfData> {
         None
     }
 
-    fn get_identity_key(&self) -> Option<Zid> {
+    fn get_identity_key(&self) -> Option<KeyIndex> {
         None
     }
 
-    fn list_keys(&self) -> Vec<Zid> {
+    fn list_keys(&self) -> Vec<KeyIndex> {
         Vec::new()
     }
 

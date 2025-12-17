@@ -46,7 +46,7 @@ mod benches {
         bench_clone(
             || {
                 btree_map! {
-                    zid!(1, 1) => true
+                    keyindex!(1, 1) => true
                 }
             },
             b,

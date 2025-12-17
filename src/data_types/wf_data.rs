@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, num::NonZeroU32};
 
 use crate::{
-    EvalError, EvalErrorKind, ExecutionContext, Zid,
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex,
     data_types::{
         WfBoolean, WfDataType, WfInvalid, WfReference, WfString, WfUntyped,
         types_def::WfTypeGeneric,
@@ -31,11 +31,11 @@ impl_wf_data_type!(
 );
 
 impl WfData {
-    pub fn new_reference(zid: Zid) -> Self {
+    pub fn new_reference(zid: KeyIndex) -> Self {
         Self::WfReference(WfReference::new(zid))
     }
 
-    pub fn from_map(map: BTreeMap<Zid, WfData>) -> WfData {
+    pub fn from_map(map: BTreeMap<KeyIndex, WfData>) -> WfData {
         WfData::WfUntyped(WfUntyped::new(map))
     }
 
@@ -99,7 +99,7 @@ impl WfData {
     // TODO: move to a check_identity?
     pub fn check_type_by_zid(
         self,
-        expected_zid: Zid,
+        expected_zid: KeyIndex,
         context: &ExecutionContext,
     ) -> Result<WfData, (EvalError, WfData)> {
         let (got_zid, value) = self.get_type_zid(context)?;
@@ -116,7 +116,7 @@ impl WfData {
     pub fn get_type_zid(
         self,
         context: &ExecutionContext,
-    ) -> Result<(Zid, WfData), (EvalError, WfData)> {
+    ) -> Result<(KeyIndex, WfData), (EvalError, WfData)> {
         if let Self::WfReference(reference) = &self
             && let Some(z) = reference.to.get_z()
             && z < NonZeroU32::new(100).unwrap()

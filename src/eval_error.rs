@@ -2,22 +2,22 @@ use std::{error::Error, fmt::Display};
 
 use thiserror::Error;
 
-use crate::{Zid, ZidParseError};
+use crate::{KeyIndex, KeyIndexParseError};
 
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum EvalErrorKind {
     #[error("Parsing zid: {0}")]
-    ParseZid(#[source] ZidParseError),
+    ParseZid(#[source] KeyIndexParseError),
     #[error("Missing key: {0}")]
-    MissingKey(Zid),
+    MissingKey(KeyIndex),
     #[error("Expected reference")]
     NotAReference,
     #[error("Wrong type, got {0}, expected {1}")]
-    WrongType(Zid, Zid),
+    WrongType(KeyIndex, KeyIndex),
     #[error("Incorrect identity reference for boolean {0}")]
-    IncorrectIdentityForBoolean(Zid),
+    IncorrectIdentityForBoolean(KeyIndex),
     #[error("Persistent object {0} does not exist")]
-    MissingPersistentObject(Zid),
+    MissingPersistentObject(KeyIndex),
     #[error("Not a standard type that can be expressed as just a ZID")]
     NotStandardType,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
@@ -27,7 +27,7 @@ pub enum EvalErrorKind {
 #[derive(Debug, Clone)]
 #[allow(dead_code)] //TODO:
 pub enum TraceEntry {
-    Inside(Zid),
+    Inside(KeyIndex),
     Text(String),
 }
 
@@ -45,7 +45,7 @@ impl EvalError {
         }
     }
 
-    pub fn missing_key(key: Zid) -> Self {
+    pub fn missing_key(key: KeyIndex) -> Self {
         Self::from_kind(EvalErrorKind::MissingKey(key))
     }
 
@@ -54,7 +54,7 @@ impl EvalError {
         self
     }
 
-    pub fn inside(mut self, zid: Zid) -> Self {
+    pub fn inside(mut self, zid: KeyIndex) -> Self {
         self.trace.push(TraceEntry::Inside(zid));
         self
     }

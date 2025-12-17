@@ -1,5 +1,5 @@
 use crate::{
-    EvalError, EvalErrorKind, ExecutionContext, Zid,
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex,
     data_types::{WfData, WfDataType},
 };
 
@@ -18,25 +18,25 @@ impl WfBoolean {
         if let WfData::WfBoolean(v) = data {
             return Ok(v);
         };
-        match data.get_key(zid!(1, 1)) {
-            None => return Err((EvalError::missing_key(zid!(1, 1)), data)),
+        match data.get_key(keyindex!(1, 1)) {
+            None => return Err((EvalError::missing_key(keyindex!(1, 1)), data)),
             Some(r#type) => {
-                if let Err((e, _content)) = r#type.check_type_by_zid(zid!(40), context) {
-                    return Err((e.inside(zid!(1, 1)), data));
+                if let Err((e, _content)) = r#type.check_type_by_zid(keyindex!(40), context) {
+                    return Err((e.inside(keyindex!(1, 1)), data));
                 }
             }
         };
 
-        let identity = match data.get_key(zid!(40, 1)) {
+        let identity = match data.get_key(keyindex!(40, 1)) {
             Some(i) => i,
-            None => return Err((EvalError::missing_key(zid!(40, 1)), data)),
+            None => return Err((EvalError::missing_key(keyindex!(40, 1)), data)),
         };
 
         match identity.get_reference(context) {
             Ok(reference) => {
-                if reference == zid!(41) {
+                if reference == keyindex!(41) {
                     Ok(Self { value: false })
-                } else if reference == zid!(42) {
+                } else if reference == keyindex!(42) {
                     Ok(Self { value: true })
                 } else {
                     Err((
@@ -47,32 +47,32 @@ impl WfBoolean {
             }
             Err((_err, identity)) => match Self::parse(identity, context) {
                 Ok(v) => Ok(v),
-                Err((e, _)) => Err((e.inside(zid!(40, 1)), data)),
+                Err((e, _)) => Err((e.inside(keyindex!(40, 1)), data)),
             },
         }
     }
 }
 
 impl WfDataType for WfBoolean {
-    fn get_identity_key(&self) -> Option<Zid> {
-        Some(zid!(40, 1))
+    fn get_identity_key(&self) -> Option<KeyIndex> {
+        Some(keyindex!(40, 1))
     }
 
-    fn get_key(&self, key: Zid) -> Option<WfData> {
-        if key == zid!(1, 1) {
-            Some(WfData::new_reference(zid!(40)))
-        } else if key == zid!(40, 1) {
+    fn get_key(&self, key: KeyIndex) -> Option<WfData> {
+        if key == keyindex!(1, 1) {
+            Some(WfData::new_reference(keyindex!(40)))
+        } else if key == keyindex!(40, 1) {
             match self.value {
-                true => Some(WfData::new_reference(zid!(41))),
-                false => Some(WfData::new_reference(zid!(42))),
+                true => Some(WfData::new_reference(keyindex!(41))),
+                false => Some(WfData::new_reference(keyindex!(42))),
             }
         } else {
             None
         }
     }
 
-    fn list_keys(&self) -> Vec<Zid> {
-        vec![zid!(1, 1), zid!(40, 1)]
+    fn list_keys(&self) -> Vec<KeyIndex> {
+        vec![keyindex!(1, 1), keyindex!(40, 1)]
     }
 
     fn is_fully_realised(&self) -> bool {
@@ -102,8 +102,8 @@ mod tests {
 
         // simple case, direct reference
         let boolean_construct = WfData::from_map(btree_map! {
-            zid!(1, 1) => WfData::new_reference(zid!(40)),
-            zid!(40, 1) => WfData::new_reference(zid!(42))
+            keyindex!(1, 1) => WfData::new_reference(keyindex!(40)),
+            keyindex!(40, 1) => WfData::new_reference(keyindex!(42))
         });
         assert_eq!(
             WfBoolean::parse(boolean_construct, &context).unwrap(),
@@ -113,7 +113,9 @@ mod tests {
         // simple case, reference
         assert_eq!(
             WfBoolean::parse(
-                WfData::new_reference(zid!(41)).evaluate(&context).unwrap(),
+                WfData::new_reference(keyindex!(41))
+                    .evaluate(&context)
+                    .unwrap(),
                 &context
             )
             .unwrap(),
@@ -122,8 +124,8 @@ mod tests {
 
         // test simple failure
         let incorrect_boolean = WfData::from_map(btree_map! {
-            zid!(1, 1) => WfData::new_reference(zid!(40)),
-            zid!(40, 1) => WfData::new_reference(zid!(39))
+            keyindex!(1, 1) => WfData::new_reference(keyindex!(40)),
+            keyindex!(40, 1) => WfData::new_reference(keyindex!(39))
         });
         WfBoolean::parse(incorrect_boolean, &context).unwrap_err();
     }

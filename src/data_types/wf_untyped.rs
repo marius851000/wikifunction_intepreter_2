@@ -1,17 +1,17 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    EvalError, ExecutionContext, RcI, Zid,
+    EvalError, ExecutionContext, KeyIndex, RcI,
     data_types::{WfBoolean, WfData, WfDataType, types_def::WfTypeGeneric},
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WfUntyped {
-    entry: RcI<BTreeMap<Zid, WfData>>,
+    entry: RcI<BTreeMap<KeyIndex, WfData>>,
 }
 
 impl WfUntyped {
-    pub fn new(entry: BTreeMap<Zid, WfData>) -> Self {
+    pub fn new(entry: BTreeMap<KeyIndex, WfData>) -> Self {
         Self {
             entry: RcI::new(entry),
         }
@@ -34,15 +34,15 @@ impl WfUntyped {
 }
 
 impl WfDataType for WfUntyped {
-    fn get_identity_key(&self) -> Option<Zid> {
+    fn get_identity_key(&self) -> Option<KeyIndex> {
         todo!("identity for Untyped? Is that even possible without consumption?")
     }
 
-    fn get_key(&self, key: Zid) -> Option<WfData> {
+    fn get_key(&self, key: KeyIndex) -> Option<WfData> {
         self.entry.get(&key).cloned()
     }
 
-    fn list_keys(&self) -> Vec<Zid> {
+    fn list_keys(&self) -> Vec<KeyIndex> {
         self.entry.keys().copied().collect()
     }
 
@@ -55,13 +55,13 @@ impl WfDataType for WfUntyped {
     }
 
     fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
-        let z1k1 = match self.entry.get(&zid!(1, 1)) {
-            None => return Err((EvalError::missing_key(zid!(1, 1)), self)),
+        let z1k1 = match self.entry.get(&keyindex!(1, 1)) {
+            None => return Err((EvalError::missing_key(keyindex!(1, 1)), self)),
             Some(z1k1) => z1k1.clone(),
         };
         match z1k1.get_type_zid(context) {
             Ok((type_zid, _z1k1)) => {
-                if type_zid == zid!(40) {
+                if type_zid == keyindex!(40) {
                     match WfBoolean::parse(self.into_wf_data(), context) {
                         Ok(v) => return Ok(v.into_wf_data()),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
@@ -73,7 +73,7 @@ impl WfDataType for WfUntyped {
             Err((_e, z1k1)) => {
                 let r#type = match z1k1.parse_type(context) {
                     Err((e, _)) => {
-                        return Err((e.inside(zid!(1, 1)), self));
+                        return Err((e.inside(keyindex!(1, 1)), self));
                     }
                     Ok(r#type) => r#type,
                 };
@@ -88,7 +88,7 @@ impl WfDataType for WfUntyped {
         }
     }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
+    fn get_reference(self, _context: &ExecutionContext) -> Result<KeyIndex, (EvalError, Self)> {
         todo!();
     }
 
