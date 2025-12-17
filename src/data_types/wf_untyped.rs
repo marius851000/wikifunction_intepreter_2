@@ -82,6 +82,7 @@ impl WfDataType for WfUntyped {
                     WfTypeGeneric::WfStandardType(_) => {
                         unreachable!("standard type with zid should be reached earlier!")
                     }
+                    WfTypeGeneric::WfTypedListType(_) => todo!("zobject typed list parsing"),
                 }
             }
         }

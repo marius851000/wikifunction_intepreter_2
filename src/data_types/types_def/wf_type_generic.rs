@@ -1,13 +1,15 @@
 use crate::{
-    EvalError, ExecutionContext, Zid,
-    data_types::{WfData, types_def::WfStandardType},
+    EvalError, EvalErrorKind, ExecutionContext, Zid,
+    data_types::{
+        WfData,
+        types_def::{WfStandardType, WfTypedListType},
+    },
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WfTypeGeneric {
     WfStandardType(WfStandardType),
-    // TODO: typed pair
-    // TODO: typed list
+    WfTypedListType(WfTypedListType), // TODO: typed pair
 }
 
 impl WfTypeGeneric {
@@ -23,8 +25,14 @@ impl WfTypeGeneric {
     pub fn get_type_zid(&self) -> Result<Zid, EvalError> {
         match self {
             Self::WfStandardType(standard) => Ok(standard.inner.identity_ref),
+            _ => Err(EvalError::from_kind(EvalErrorKind::NotStandardType)),
         }
     }
 }
 
-impl_wf_data_type!(WfTypeGeneric, WfData::WfType, WfStandardType(d));
+impl_wf_data_type!(
+    WfTypeGeneric,
+    WfData::WfType,
+    WfStandardType(d),
+    WfTypedListType(d)
+);

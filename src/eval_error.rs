@@ -18,6 +18,8 @@ pub enum EvalErrorKind {
     IncorrectIdentityForBoolean(Zid),
     #[error("Persistent object {0} does not exist")]
     MissingPersistentObject(Zid),
+    #[error("Not a standard type that can be expressed as just a ZID")]
+    NotStandardType,
 }
 
 #[derive(Debug, Clone)]
