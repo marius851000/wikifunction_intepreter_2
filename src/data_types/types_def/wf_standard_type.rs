@@ -6,18 +6,26 @@ use crate::{
 #[derive(Debug, PartialEq, Clone)]
 pub struct WfStandardTypeInner {
     pub identity_ref: Zid,
-    keys: WfData,
-    validator: WfData,
-    equality: WfData,
-    display_function: WfData,
-    reading_function: WfData,
-    type_converters_to_code: WfData,
-    type_converters_from_code: WfData,
+    pub keys: WfData,
+    pub validator: WfData,
+    pub equality: WfData,
+    pub display_function: WfData,
+    pub reading_function: WfData,
+    pub type_converters_to_code: WfData,
+    pub type_converters_from_code: WfData,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct WfStandardType {
     pub inner: RcI<WfStandardTypeInner>,
+}
+
+impl From<WfStandardTypeInner> for WfStandardType {
+    fn from(value: WfStandardTypeInner) -> Self {
+        Self {
+            inner: RcI::new(value),
+        }
+    }
 }
 
 impl WfDataType for WfStandardType {

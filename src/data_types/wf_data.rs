@@ -3,7 +3,8 @@ use std::{collections::BTreeMap, num::NonZeroU32};
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, Zid,
     data_types::{
-        WfBoolean, WfDataType, WfReference, WfString, WfUntyped, types_def::WfTypeGeneric,
+        WfBoolean, WfDataType, WfInvalid, WfReference, WfString, WfUntyped,
+        types_def::WfTypeGeneric,
     },
 };
 
@@ -15,6 +16,7 @@ pub enum WfData {
     WfString(WfString),
     WfUntyped(WfUntyped),
     WfType(WfTypeGeneric),
+    WfInvalid(WfInvalid),
 }
 
 impl_wf_data_type!(
@@ -24,7 +26,8 @@ impl_wf_data_type!(
     WfReference(d),
     WfString(d),
     WfUntyped(d),
-    WfType(d)
+    WfType(d),
+    WfInvalid(d)
 );
 
 impl WfData {
@@ -126,6 +129,11 @@ impl WfData {
             Ok(zid) => Ok((zid, WfData::WfType(r#type))),
             Err(e) => Err((e, WfData::WfType(r#type))),
         }
+    }
+
+    #[cfg(test)]
+    pub fn unvalid(reason: EvalErrorKind) -> Self {
+        Self::WfInvalid(WfInvalid::new(reason))
     }
 }
 

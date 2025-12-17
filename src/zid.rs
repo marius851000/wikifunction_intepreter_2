@@ -1,12 +1,32 @@
 use std::{
     fmt::{Debug, Display},
-    num::NonZeroU32,
+    num::{NonZeroU32, ParseIntError, TryFromIntError},
 };
 
-use anyhow::{Context, anyhow};
 use serde::{Deserialize, de::Visitor};
+use thiserror::Error;
 
-use crate::EvalErrorKind;
+#[derive(Error, Debug, PartialEq, Clone)]
+pub enum ZidParseError {
+    #[error("the input key reference is empty")]
+    InputEmpty,
+    #[error("the first character should be a Z or a K")]
+    FirstNotZOrK,
+    #[error("the text contain more text than necessary")]
+    TooMuchText,
+    #[error("no text before K")]
+    NoTextBeforeK,
+    #[error("Z and K should not be both undefined")]
+    ZAndKUndefined,
+    #[error("Can’t parse the Z-part as a number")]
+    CantParseZ(#[source] ParseIntError),
+    #[error("Can’t parse the K-part as a number")]
+    CantParseK(#[source] ParseIntError),
+    #[error("Z-part shouldn’t be 0")]
+    PartZZero(#[source] TryFromIntError),
+    #[error("K-part shouldn’t be 0")]
+    PartKZero(#[source] TryFromIntError),
+}
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 /// At least one of the value is Some
@@ -21,79 +41,55 @@ impl Zid {
         self.1
     }
 
-    pub fn from_zid(text: &str) -> Result<Self, EvalErrorKind> {
+    pub fn from_zid(text: &str) -> Result<Self, ZidParseError> {
         let mut k_splitted = text.split('K');
 
-        let before_key = k_splitted
-            .next()
-            .context("input text should not be empty")
-            .map_err(EvalErrorKind::ParseZid)?;
+        let before_key = k_splitted.next().ok_or(ZidParseError::InputEmpty)?;
 
         let z = if !before_key.is_empty() {
             let mut char_id_iter = before_key.chars();
             if char_id_iter
                 .next()
-                .context("text before K/end of string should not be empty")
-                .map_err(EvalErrorKind::ParseZid)?
+                .expect("we already checked the this string is not emtpy")
                 != 'Z'
             {
-                return Err(EvalErrorKind::ParseZid(anyhow!(
-                    "First character should be Z"
-                )));
+                return Err(ZidParseError::FirstNotZOrK);
             }
             Some(
                 char_id_iter
                     .as_str()
                     .parse()
-                    .context("Can’t convert the first number part of the ZID to a u32 number")
-                    .map_err(EvalErrorKind::ParseZid)?,
+                    .map_err(ZidParseError::CantParseZ)?,
             )
         } else {
             None
         };
 
         let k = if let Some(second_part) = k_splitted.next() {
-            Some(
-                second_part
-                    .parse()
-                    .context("Could not parse post-key text as u32")
-                    .map_err(EvalErrorKind::ParseZid)?,
-            )
+            Some(second_part.parse().map_err(ZidParseError::CantParseK)?)
         } else {
             None
         };
 
         if k_splitted.next().is_some() {
-            return Err(EvalErrorKind::ParseZid(anyhow!(
-                "Text contain extra characters"
-            )));
+            return Err(ZidParseError::FirstNotZOrK);
         }
 
         Zid::from_u32s(z, k)
     }
 
-    pub fn from_u32s(z: Option<u32>, k: Option<u32>) -> Result<Self, EvalErrorKind> {
+    pub fn from_u32s(z: Option<u32>, k: Option<u32>) -> Result<Self, ZidParseError> {
         if z.is_none() && k.is_none() {
-            return Err(EvalErrorKind::ParseZid(anyhow!(
-                "z and k should not be both None"
-            )));
+            return Err(ZidParseError::ZAndKUndefined);
         }
         Ok(Self(
             if let Some(z) = z {
-                Some(
-                    NonZeroU32::try_from(z)
-                        .context("z should be non-zero")
-                        .map_err(EvalErrorKind::ParseZid)?,
-                )
+                Some(NonZeroU32::try_from(z).map_err(ZidParseError::PartZZero)?)
             } else {
                 None
             },
             if let Some(k) = k {
-                Some(
-                    NonZeroU32::try_from(k)
-                        .context("k should be non-zero")
-                        .map_err(EvalErrorKind::ParseZid)?,
-                )
+                Some(NonZeroU32::try_from(k).map_err(ZidParseError::PartKZero)?)
             } else {
                 None
             },
@@ -128,7 +124,7 @@ impl Zid {
         } else if let Some(k) = self.1 {
             format!("K{}", k)
         } else {
-            unreachable!("z and k should be both null");
+            unreachable!("z and k shouldn’t be both null");
         }
     }
 }

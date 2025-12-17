@@ -1,10 +1,7 @@
 use std::fmt::Debug;
 
-use enum_dispatch::enum_dispatch;
-
 use crate::{EvalError, EvalErrorKind, ExecutionContext, Zid, data_types::WfData};
 
-#[enum_dispatch]
 pub trait WfDataType: Debug + Clone {
     fn into_wf_data(self) -> WfData;
     /// used to know that this structure is one of the final type. Used to know that inequality mean two object with this property does not represent the same thing.

@@ -17,4 +17,7 @@ pub use wf_string::WfString;
 mod wf_untyped;
 pub use wf_untyped::WfUntyped;
 
+mod wf_invalid;
+pub use wf_invalid::WfInvalid;
+
 pub mod types_def;

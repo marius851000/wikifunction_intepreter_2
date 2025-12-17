@@ -21,10 +21,23 @@ impl GlobalContext {
     pub fn default_for_test() -> Self {
         use map_macro::btree_map;
 
-        use crate::data_types::{WfBoolean, WfDataType};
+        use crate::data_types::{
+            WfBoolean, WfDataType,
+            types_def::{WfStandardType, WfStandardTypeInner},
+        };
 
         Self {
             objects: btree_map! {
+                zid!(40) => <WfStandardType>::from(WfStandardTypeInner {
+                    identity_ref: zid!(40),
+                    keys: WfData::unvalid(EvalErrorKind::TestData),
+                    validator: WfData::unvalid(EvalErrorKind::TestData),
+                    equality: WfData::unvalid(EvalErrorKind::TestData),
+                    display_function: WfData::unvalid(EvalErrorKind::TestData),
+                    reading_function: WfData::unvalid(EvalErrorKind::TestData),
+                    type_converters_to_code: WfData::unvalid(EvalErrorKind::TestData),
+                    type_converters_from_code: WfData::unvalid(EvalErrorKind::TestData),
+                }).into_wf_data(),
                 zid!(41) => WfBoolean::new(true).into_wf_data(),
                 zid!(42) => WfBoolean::new(false).into_wf_data()
             },

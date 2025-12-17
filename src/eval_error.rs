@@ -2,12 +2,12 @@ use std::{error::Error, fmt::Display};
 
 use thiserror::Error;
 
-use crate::Zid;
+use crate::{Zid, ZidParseError};
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq, Clone)]
 pub enum EvalErrorKind {
     #[error("Parsing zid: {0}")]
-    ParseZid(#[source] anyhow::Error),
+    ParseZid(#[source] ZidParseError),
     #[error("Missing key: {0}")]
     MissingKey(Zid),
     #[error("Expected reference")]
@@ -20,6 +20,8 @@ pub enum EvalErrorKind {
     MissingPersistentObject(Zid),
     #[error("Not a standard type that can be expressed as just a ZID")]
     NotStandardType,
+    #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
+    TestData,
 }
 
 #[derive(Debug, Clone)]

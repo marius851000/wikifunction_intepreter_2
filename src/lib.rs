@@ -4,7 +4,7 @@
 mod zid;
 use std::rc::Rc;
 
-pub use zid::Zid;
+pub use zid::{Zid, ZidParseError};
 
 pub mod data_types;
 
