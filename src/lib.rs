@@ -16,6 +16,8 @@ pub use execution_context::ExecutionContext;
 
 pub mod util;
 
+pub mod parsing;
+
 mod global_context;
 pub use global_context::GlobalContext;
 

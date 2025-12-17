@@ -6,6 +6,8 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct WfTypedListType {
     r#type: RcI<WfTypeGeneric>, // this Rc is to avoid recursive declaration
+                                // hmm... this won’t work for parsing... And I can’t have object who haven’t been fully type-checked...
+                                // that’s a problem for the linked list implementation. An unchecked typed list like WfUntyped
 }
 
 impl WfDataType for WfTypedListType {

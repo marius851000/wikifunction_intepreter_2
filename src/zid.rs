@@ -3,7 +3,6 @@ use std::{
     num::{NonZeroU32, ParseIntError, TryFromIntError},
 };
 
-use serde::{Deserialize, de::Visitor};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Clone)]
@@ -142,40 +141,6 @@ impl Debug for Zid {
     }
 }
 
-#[derive(Default)]
-pub(crate) struct ReferenceVisitor {}
-
-impl<'de> Visitor<'de> for ReferenceVisitor {
-    type Value = Zid;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a ZID")
-    }
-
-    fn visit_borrowed_str<E>(self, t: &'de str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        match Zid::from_zid(t) {
-            Ok(v) => Ok(v),
-
-            Err(err) => Err(serde::de::Error::invalid_value(
-                serde::de::Unexpected::Str(t),
-                &err.to_string().as_str(),
-            )),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for Zid {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_str(ReferenceVisitor::default())
-    }
-}
-
 macro_rules! zid {
     ($z:expr) => {{
         const ZID: crate::Zid = crate::Zid::from_u32s_panic(Some($z), None);
@@ -213,17 +178,6 @@ mod tests {
     fn test_to_zid() {
         assert_eq!(zid!(156).to_zid(), "Z156");
         assert_eq!(zid!(30, 4).to_zid(), "Z30K4");
-    }
-
-    #[test]
-    fn test_deserialize() {
-        assert_eq!(serde_json::from_str::<Zid>("\"Z654\"").unwrap(), zid!(654),);
-        assert_eq!(
-            serde_json::from_str::<Zid>("\"Z30K5\"").unwrap(),
-            zid!(30, 5),
-        );
-        assert!(serde_json::from_str::<Zid>("654").is_err());
-        assert!(serde_json::from_str::<Zid>("Z1a").is_err());
     }
 
     #[test]

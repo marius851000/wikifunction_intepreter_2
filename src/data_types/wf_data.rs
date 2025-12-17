@@ -1,11 +1,14 @@
 use std::{collections::BTreeMap, num::NonZeroU32};
 
+use sonic_rs::{Value, ValueRef};
+
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, Zid,
     data_types::{
         WfBoolean, WfDataType, WfInvalid, WfReference, WfString, WfUntyped,
         types_def::WfTypeGeneric,
     },
+    parsing::LoadError,
 };
 
 /// A type that reference one of the data type in a memory efficient way. And also it isn’t dyn-compatible?
@@ -128,6 +131,13 @@ impl WfData {
         match r#type.get_type_zid() {
             Ok(zid) => Ok((zid, WfData::WfType(r#type))),
             Err(e) => Err((e, WfData::WfType(r#type))),
+        }
+    }
+
+    pub fn from_json(source: &Value) -> Result<Self, LoadError> {
+        match source.as_ref() {
+            ValueRef::Object(object) => Ok(WfUntyped::from_json(object)?.into_wf_data()),
+            _ => Err(LoadError::InvalidDataType(source.clone())),
         }
     }
 
