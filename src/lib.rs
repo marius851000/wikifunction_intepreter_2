@@ -1,5 +1,9 @@
+#![feature(test)]
+
 #[macro_use]
 mod zid;
+use std::rc::Rc;
+
 pub use zid::Zid;
 
 pub mod data_types;
@@ -14,3 +18,8 @@ pub mod util;
 
 mod global_context;
 pub use global_context::GlobalContext;
+
+#[cfg(test)]
+mod bench;
+
+type RcI<T> = Rc<T>;

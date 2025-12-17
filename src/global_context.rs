@@ -10,7 +10,7 @@ pub struct GlobalContext {
 }
 
 impl GlobalContext {
-    pub fn get_object_value_clone(&self, zid: &Zid) -> Result<WfData, EvalError> {
+    pub fn get_object_value(&self, zid: &Zid) -> Result<WfData, EvalError> {
         Ok(self
             .objects
             .get(zid)

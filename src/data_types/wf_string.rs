@@ -1,29 +1,36 @@
-use std::collections::BTreeMap;
-
-use map_macro::btree_map;
-
 use crate::{
-    Zid,
+    RcI, Zid,
     data_types::{WfData, WfDataType},
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WfString {
-    text: String,
+    text: RcI<str>,
 }
 
 impl WfString {
     pub fn new(text: String) -> Self {
-        Self { text }
+        Self { text: text.into() }
     }
 }
 
 impl WfDataType for WfString {
-    fn into_map_no_follow(self) -> BTreeMap<Zid, WfData> {
-        btree_map! {
-            zid!(1, 1) => WfData::new_reference(zid!(6)),
-            zid!(6, 1) => self.clone().into_wf_data(),
+    fn get_identity_key(&self) -> Option<Zid> {
+        Some(zid!(6, 1)) // that’s quite a special case, but still a valid identity
+    }
+
+    fn get_key(&self, key: Zid) -> Option<WfData> {
+        if key == zid!(1, 1) {
+            Some(WfData::new_reference(zid!(6)))
+        } else if key == zid!(6, 1) {
+            Some(self.clone().into_wf_data())
+        } else {
+            None
         }
+    }
+
+    fn list_keys(&self) -> Vec<Zid> {
+        vec![zid!(1, 1), zid!(6, 1)]
     }
 
     fn is_fully_realised(&self) -> bool {

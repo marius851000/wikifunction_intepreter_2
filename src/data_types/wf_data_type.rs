@@ -6,56 +6,88 @@ use crate::{EvalError, EvalErrorKind, ExecutionContext, Zid, data_types::WfData}
 
 #[enum_dispatch]
 pub trait WfDataType: Debug + Clone {
-    fn into_map_no_follow(self) -> BTreeMap<Zid, WfData>;
     fn into_wf_data(self) -> WfData;
     /// used to know that this structure is one of the final type. Used to know that inequality mean two object with this property does not represent the same thing.
     fn is_fully_realised(&self) -> bool;
+    fn get_identity_key(&self) -> Option<Zid>;
+    /// does not evaluate
+    fn get_key(&self, key: Zid) -> Option<WfData>;
+    /// does not evaluate
+    fn list_keys(&self) -> Vec<Zid>; //TODO: some iterator?
 
     /// Follow references and all that -- recursively. Default to returning self.
     /// Also need to guarantee the data is correct. It shouldn’t return a WfUntyped.
-    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, WfData)> {
+    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
         Ok(self.into_wf_data())
     }
-    fn into_map(
-        self,
-        context: &ExecutionContext,
-    ) -> Result<BTreeMap<Zid, WfData>, (EvalError, WfData)> {
-        Ok(self.evaluate(context)?.into_map_no_follow())
-    }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, WfData)> {
-        Err((
-            EvalError::from_kind(EvalErrorKind::NotAReference),
-            self.into_wf_data(),
-        ))
+    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
+        Err((EvalError::from_kind(EvalErrorKind::NotAReference), self))
     }
 }
 
-impl<T: WfDataType> WfDataType for Box<T> {
-    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, WfData)> {
-        (*self).evaluate(context)
-    }
+/// Macro that generates the `WfDataType` implementation for a generic enum.
+///
+/// * **$Struct** – The enum type that implements `WfDataType`
+/// * **$into_wf_data_expr** – Expression that produces a `WfData` from the enum
+/// * **$variant ($inner)** – One or more enum variants and the name of the
+///   inner field that implements `WfDataType`.
+///
+/// Example usage:
+/// ```
+/// impl_wf_data_type!(
+///     WfTypeGeneric,
+///     |this| WfData::WfType(this),
+///     WfStandardType(d)
+/// );
+/// ```
+///
+/// Thanks gpt-oss:20b (with barely one mistake)
+#[macro_export]
+macro_rules! impl_wf_data_type {
+    ($Struct:ident, $into_wf_data_expr:expr, $( $variant:ident ($inner:ident) ),+ ) => {
+        impl WfDataType for $Struct {
+            fn into_wf_data(self) -> WfData {
+                $into_wf_data_expr(self)
+            }
 
-    fn get_reference(self, context: &ExecutionContext) -> Result<Zid, (EvalError, WfData)> {
-        (*self).get_reference(context)
-    }
+            fn is_fully_realised(&self) -> bool {
+                match self {
+                    $(Self::$variant($inner) => $inner.is_fully_realised(),)+
+                }
+            }
 
-    fn into_map(
-        self,
-        context: &ExecutionContext,
-    ) -> Result<BTreeMap<Zid, WfData>, (EvalError, WfData)> {
-        (*self).into_map(context)
-    }
+            fn get_identity_key(&self) -> Option<Zid> {
+                match self {
+                    $(Self::$variant($inner) => $inner.get_identity_key(),)+
+                }
+            }
 
-    fn into_map_no_follow(self) -> BTreeMap<Zid, WfData> {
-        (*self).into_map_no_follow()
-    }
+            fn get_key(&self, key: Zid) -> Option<WfData> {
+                match self {
+                    $(Self::$variant($inner) => $inner.get_key(key),)+
+                }
+            }
 
-    fn into_wf_data(self) -> WfData {
-        (*self).into_wf_data()
-    }
+            fn list_keys(&self) -> Vec<Zid> {
+                match self {
+                    $(Self::$variant($inner) => $inner.list_keys(),)+
+                }
+            }
 
-    fn is_fully_realised(&self) -> bool {
-        (**self).is_fully_realised()
+            fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+                match self {
+                    $(Self::$variant($inner) =>
+                        $inner.evaluate(context).map_err(|(e, p)| (e, Self::$variant(p))),)+
+                }
+            }
+
+            fn get_reference(self, context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
+                match self {
+                    $(Self::$variant($inner) =>
+                        $inner.get_reference(context).map_err(|(e, p)| (e, Self::$variant(p))),)+
+                }
+            }
+        }
     }
 }

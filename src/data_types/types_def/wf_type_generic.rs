@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use enum_dispatch::enum_dispatch;
 
 use crate::{
@@ -8,16 +6,15 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
-#[enum_dispatch(WfDataType)]
 pub enum WfTypeGeneric {
-    WfStandardType(Box<WfStandardType>),
+    WfStandardType(WfStandardType),
     // TODO: typed pair
     // TODO: typed list
 }
 
 impl WfTypeGeneric {
+    /// assume the data is dereferenced (but may be untyped)
     pub fn parse(data: WfData, context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
-        let data = data.evaluate(context)?;
         // we know this isn’t a reference, not it is a function. The type-function (linked list, etc) should already be dereferenced.
         match data {
             WfData::WfType(r#type) => return Ok(r#type),
@@ -27,7 +24,13 @@ impl WfTypeGeneric {
 
     pub fn get_type_zid(&self) -> Result<Zid, EvalError> {
         match self {
-            Self::WfStandardType(standard) => Ok(standard.identity_ref),
+            Self::WfStandardType(standard) => Ok(standard.inner.identity_ref),
         }
     }
 }
+
+impl_wf_data_type!(
+    WfTypeGeneric,
+    |this| WfData::WfType(this),
+    WfStandardType(d)
+);

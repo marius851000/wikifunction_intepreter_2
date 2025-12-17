@@ -19,11 +19,16 @@ impl WfReference {
 }
 
 impl WfDataType for WfReference {
-    fn into_map_no_follow(self) -> BTreeMap<Zid, WfData> {
-        btree_map! {
-            zid!(1, 1) => WfData::new_reference(zid!(9)),
-            zid!(9, 1) => WfString::new(self.to.to_string()).into_wf_data(),
-        }
+    fn get_identity_key(&self) -> Option<Zid> {
+        unreachable!("shouldn’t access a reference directly")
+    }
+
+    fn get_key(&self, _key: Zid) -> Option<WfData> {
+        unreachable!("shouldn’t access a reference directly")
+    }
+
+    fn list_keys(&self) -> Vec<Zid> {
+        unreachable!("shouldn’t access a reference directly")
     }
 
     fn is_fully_realised(&self) -> bool {
@@ -34,14 +39,17 @@ impl WfDataType for WfReference {
         WfData::WfReference(self)
     }
 
-    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, WfData)> {
-        match context.get_global().get_object_value_clone(&self.to) {
-            Err(e) => Err((e, self.into_wf_data())),
-            Ok(v) => Ok(v),
+    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+        match context.get_global().get_object_value(&self.to) {
+            Err(e) => Err((e, self)),
+            Ok(v) => match v.evaluate(context) {
+                Err((e, _data)) => Err((e.inside(zid!(9, 1)), self)),
+                Ok(v) => Ok(v),
+            },
         }
     }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, WfData)> {
+    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
         Ok(self.to)
     }
 }

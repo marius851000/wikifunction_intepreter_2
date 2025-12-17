@@ -11,7 +11,6 @@ use crate::{
 
 /// A type that reference one of the data type in a memory efficient way. And also it isn’t dyn-compatible?
 #[derive(Debug, Clone, PartialEq)]
-#[enum_dispatch(WfDataType)]
 pub enum WfData {
     WfBoolean(WfBoolean),
     WfReference(WfReference),
@@ -19,6 +18,16 @@ pub enum WfData {
     WfUntyped(WfUntyped),
     WfType(WfTypeGeneric),
 }
+
+impl_wf_data_type!(
+    WfData,
+    |this| this,
+    WfBoolean(d),
+    WfReference(d),
+    WfString(d),
+    WfUntyped(d),
+    WfType(d)
+);
 
 impl WfData {
     pub fn new_reference(zid: Zid) -> Self {
@@ -29,94 +38,64 @@ impl WfData {
         WfData::WfUntyped(WfUntyped::new(map))
     }
 
-    pub fn parse_boolean(self, context: &ExecutionContext) -> Result<WfBoolean, (EvalError, Self)> {
-        match self {
-            Self::WfBoolean(ready) => Ok(ready),
-            other => WfBoolean::parse(other.into_map(context)?, context),
-        }
-    }
-
     pub fn parse_type(
         self,
         context: &ExecutionContext,
-    ) -> Result<WfTypeGeneric, (EvalError, Self)> {
+    ) -> Result<WfTypeGeneric, (EvalError, WfData)> {
         match self {
             Self::WfType(ready) => Ok(ready),
             other => WfTypeGeneric::parse(other, context),
         }
     }
 
-    /// Error return: first is self, second is other. The last bool is true if the error originate from self, false if it originate from other.
+    /// Error return: The last bool is true if the error originate from self, false if it originate from other.
+    /// TODO: make use of the identity reference
     pub fn equality(
         self,
         other: WfData,
         context: &ExecutionContext,
-    ) -> Result<(bool, WfData, WfData), (EvalError, WfData, WfData, bool)> {
+    ) -> Result<bool, (EvalError, bool)> {
         // fast path
         if self == other {
-            return Ok((true, self, other));
+            return Ok(true);
         } else if self.is_fully_realised() && other.is_fully_realised() {
-            return Ok((false, self, other));
+            return Ok(false);
         }
 
         // slow path, compare key-by-key
-        let mut entries_first = match self.into_map(context) {
-            Ok(v) => v,
-            Err((e, self_s)) => return Err((e, self_s, other, true)),
-        };
-        let mut entries_second = match other.into_map(context) {
-            Ok(v) => v,
-            Err((e, other)) => return Err((e, WfData::from_map(entries_first), other, false)),
-        };
+        let first = self.evaluate(context).unwrap(); //TODO: error handling
+        let other = other.evaluate(context).unwrap(); //TODO: error handling
+        let keys_first = first.list_keys();
+        let keys_second = other.list_keys();
 
-        if !entries_first.keys().eq(entries_second.keys()) {
-            return Ok((
-                false,
-                WfData::from_map(entries_first),
-                WfData::from_map(entries_second),
-            ));
+        if !keys_first.iter().eq(keys_second.iter()) {
+            return Ok(false);
         }
 
-        let keys: Vec<Zid> = entries_first.keys().cloned().collect();
+        for key in keys_first {
+            let value_first = first
+                .get_key(key)
+                .expect("key should be guaranteed to exist");
+            let value_second = other
+                .get_key(key)
+                .expect("key should be guaranteed to exist");
 
-        for key in keys {
-            let value_first = entries_first.remove(&key).expect("key missing?");
-            let value_second = entries_second.remove(&key).expect("key missing?");
-
-            let (this_equality, value_first, value_second) =
-                match value_first.equality(value_second, context) {
-                    Ok(v) => v,
-                    Err((e, value_first, value_second, error_source_which)) => {
-                        entries_first.insert(key, value_first);
-                        entries_second.insert(key, value_second);
-                        return Err((
-                            e.inside(key.clone()),
-                            WfData::from_map(entries_first),
-                            WfData::from_map(entries_second),
-                            error_source_which,
-                        ));
-                    }
-                };
-
-            entries_first.insert(key, value_first);
-            entries_second.insert(key, value_second);
+            let this_equality = match value_first.equality(value_second, context) {
+                Ok(v) => v,
+                Err((e, error_source_which)) => {
+                    return Err((e.inside(key.clone()), error_source_which));
+                }
+            };
 
             if this_equality == false {
-                return Ok((
-                    false,
-                    WfData::from_map(entries_first),
-                    WfData::from_map(entries_second),
-                ));
+                return Ok(false);
             }
         }
 
-        Ok((
-            true,
-            WfData::from_map(entries_first),
-            WfData::from_map(entries_second),
-        ))
+        Ok(true)
     }
 
+    // TODO: move to a check_identity?
     pub fn check_type_by_zid(
         self,
         expected_zid: Zid,
@@ -173,22 +152,18 @@ mod tests {
         let context = ExecutionContext::default_for_global(global_context);
 
         // test fast equality. Those object are invalid, and will fail if evaluated, but it won’t need to.
+        // TODO: is that intended behavior
         let test1_data = WfData::from_map(btree_map! {});
         let test1_data_clone = test1_data.clone();
-        assert!(test1_data.equality(test1_data_clone, &context).unwrap().0);
+        assert!(test1_data.equality(test1_data_clone, &context).unwrap());
 
-        // test can spot different boolean as well as reconstruction
+        // test can spot different boolean
         let test2_first_true = WfBoolean::new(true).into_wf_data();
         let test2_second_false = WfBoolean::new(false).into_wf_data();
-        let (test2_eq, test2_first_true, _test2_second_false) = test2_first_true
-            .equality(test2_second_false, &context)
-            .unwrap();
-        assert!(!test2_eq);
         assert!(
-            test2_first_true
-                .equality(WfBoolean::new(true).into_wf_data(), &context)
+            !test2_first_true
+                .equality(test2_second_false, &context)
                 .unwrap()
-                .0
         );
     }
 }
