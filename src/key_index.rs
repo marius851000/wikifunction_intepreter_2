@@ -118,7 +118,7 @@ impl KeyIndex {
         )
     }
 
-    pub fn to_zid(&self) -> String {
+    pub fn to_string(&self) -> String {
         if let Some(z) = self.0 {
             if let Some(k) = self.1 {
                 format!("Z{}K{}", z, k)
@@ -135,25 +135,25 @@ impl KeyIndex {
 
 impl Display for KeyIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.to_zid())
+        f.write_str(&self.to_string())
     }
 }
 
 impl Debug for KeyIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // That’s probably good. This reference has quite a specific and recogniseable syntax
-        f.write_str(&self.to_zid())
+        f.write_str(&self.to_string())
     }
 }
 
 macro_rules! keyindex {
     ($z:expr) => {{
-        const ZID: crate::KeyIndex = crate::KeyIndex::from_u32s_panic(Some($z), None);
-        ZID
+        const KEYINDEX: crate::KeyIndex = crate::KeyIndex::from_u32s_panic(Some($z), None);
+        KEYINDEX
     }};
     ($z:expr, $k:expr) => {{
-        const ZID: crate::KeyIndex = crate::KeyIndex::from_u32s_panic(Some($z), Some($k));
-        ZID
+        const KEYINDEX: crate::KeyIndex = crate::KeyIndex::from_u32s_panic(Some($z), Some($k));
+        KEYINDEX
     }};
 }
 
@@ -162,7 +162,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_zid() {
+    fn test_from_str() {
         assert_eq!(KeyIndex::from_str("Z156").unwrap(), keyindex!(156));
         assert_eq!(KeyIndex::from_str("Z30K4").unwrap(), keyindex!(30, 4),);
         assert_eq!(
@@ -180,9 +180,9 @@ mod tests {
     }
 
     #[test]
-    fn test_to_zid() {
-        assert_eq!(keyindex!(156).to_zid(), "Z156");
-        assert_eq!(keyindex!(30, 4).to_zid(), "Z30K4");
+    fn test_to_string() {
+        assert_eq!(keyindex!(156).to_string(), "Z156");
+        assert_eq!(keyindex!(30, 4).to_string(), "Z30K4");
     }
 
     #[test]

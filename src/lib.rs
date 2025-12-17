@@ -2,9 +2,11 @@
 
 #[macro_use]
 mod key_index;
-use std::rc::Rc;
-
 pub use key_index::{KeyIndex, KeyIndexParseError};
+
+#[macro_use]
+mod zid;
+pub use zid::{Zid, ZidError};
 
 pub mod data_types;
 
@@ -24,4 +26,5 @@ pub use global_context::GlobalContext;
 #[cfg(test)]
 mod bench;
 
+use std::rc::Rc;
 type RcI<T> = Rc<T>;
