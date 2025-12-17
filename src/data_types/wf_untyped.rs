@@ -1,11 +1,8 @@
 use std::collections::BTreeMap;
 
-use sonic_rs::Object;
-
 use crate::{
     EvalError, ExecutionContext, RcI, Zid,
     data_types::{WfBoolean, WfData, WfDataType, types_def::WfTypeGeneric},
-    parsing::LoadError,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,17 +30,6 @@ impl WfUntyped {
         Self {
             entry: RcI::new(result),
         }
-    }
-
-    pub fn from_json(source: &Object) -> Result<Self, LoadError> {
-        let mut temp_map = BTreeMap::new();
-        for (k, v) in source.iter() {
-            let zid = Zid::from_zid(k).map_err(|e| LoadError::CantParseZid(k.to_string(), e))?;
-            let inner_object =
-                WfData::from_json(v).map_err(|e| LoadError::InsideMap(zid, Box::new(e)))?;
-            temp_map.insert(zid, inner_object);
-        }
-        Ok(Self::new(temp_map))
     }
 }
 

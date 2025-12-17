@@ -11,4 +11,10 @@ pub enum LoadError {
     InsideMap(Zid, Box<LoadError>),
     #[error("unsupported data type in {0}")]
     InvalidDataType(Value),
+    #[error("Extra field {0:?} in a String ZObject")]
+    ExtraFieldInString(String),
+    #[error(
+        "First character of a string that looks like reference is not Z. They should be wrapped into a {{\"Z1K1\": \"Z6\", \"Z6K1\": <string>}} (in string {0:?})"
+    )]
+    UpperCaseFirstCharOutsideZ6(String),
 }

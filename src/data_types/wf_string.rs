@@ -9,7 +9,7 @@ pub struct WfString {
 }
 
 impl WfString {
-    pub fn new(text: String) -> Self {
+    pub fn new(text: &str) -> Self {
         Self { text: text.into() }
     }
 }

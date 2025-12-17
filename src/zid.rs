@@ -40,7 +40,8 @@ impl Zid {
         self.1
     }
 
-    pub fn from_zid(text: &str) -> Result<Self, ZidParseError> {
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(text: &str) -> Result<Self, ZidParseError> {
         let mut k_splitted = text.split('K');
 
         let before_key = k_splitted.next().ok_or(ZidParseError::InputEmpty)?;
@@ -158,20 +159,20 @@ mod tests {
 
     #[test]
     fn test_from_zid() {
-        assert_eq!(Zid::from_zid("Z156").unwrap(), zid!(156));
-        assert_eq!(Zid::from_zid("Z30K4").unwrap(), zid!(30, 4),);
+        assert_eq!(Zid::from_str("Z156").unwrap(), zid!(156));
+        assert_eq!(Zid::from_str("Z30K4").unwrap(), zid!(30, 4),);
         assert_eq!(
-            Zid::from_zid("K1").unwrap(),
+            Zid::from_str("K1").unwrap(),
             Zid(None, Some(NonZeroU32::new(1)).unwrap())
         );
-        assert!(Zid::from_zid("T156").is_err());
-        assert!(Zid::from_zid("Z").is_err());
-        assert!(Zid::from_zid("Z-9").is_err());
-        assert!(Zid::from_zid("Z1a").is_err());
-        assert!(Zid::from_zid("Za1").is_err());
-        assert!(Zid::from_zid("").is_err());
-        assert!(Zid::from_zid("Z30K4Z1").is_err());
-        assert!(Zid::from_zid("Z30K4K1").is_err());
+        assert!(Zid::from_str("T156").is_err());
+        assert!(Zid::from_str("Z").is_err());
+        assert!(Zid::from_str("Z-9").is_err());
+        assert!(Zid::from_str("Z1a").is_err());
+        assert!(Zid::from_str("Za1").is_err());
+        assert!(Zid::from_str("").is_err());
+        assert!(Zid::from_str("Z30K4Z1").is_err());
+        assert!(Zid::from_str("Z30K4K1").is_err());
     }
 
     #[test]
