@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{EvalError, EvalErrorKind, ExecutionContext, KeyIndex, data_types::WfData};
+use crate::{EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid, data_types::WfData};
 
 pub trait WfDataType: Debug + Clone {
     fn into_wf_data(self) -> WfData;
@@ -18,7 +18,7 @@ pub trait WfDataType: Debug + Clone {
         Ok(self.into_wf_data())
     }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<KeyIndex, (EvalError, Self)> {
+    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
         Err((EvalError::from_kind(EvalErrorKind::NotAReference), self))
     }
 }
@@ -89,7 +89,7 @@ macro_rules! impl_wf_data_type {
                 }
             }
 
-            fn get_reference(self, context: &$crate::ExecutionContext) -> Result<$crate::KeyIndex, ($crate::EvalError, Self)> {
+            fn get_reference(self, context: &$crate::ExecutionContext) -> Result<$crate::Zid, ($crate::EvalError, Self)> {
                 match self {
                     $(Self::$variant($inner) =>
                         $inner.get_reference(context).map_err(|(e, p)| (e, Self::$variant(p))),)+

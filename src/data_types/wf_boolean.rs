@@ -21,7 +21,7 @@ impl WfBoolean {
         match data.get_key(keyindex!(1, 1)) {
             None => return Err((EvalError::missing_key(keyindex!(1, 1)), data)),
             Some(r#type) => {
-                if let Err((e, _content)) = r#type.check_type_by_zid(keyindex!(40), context) {
+                if let Err((e, _content)) = r#type.check_type_by_zid(zid!(40), context) {
                     return Err((e.inside(keyindex!(1, 1)), data));
                 }
             }
@@ -34,9 +34,9 @@ impl WfBoolean {
 
         match identity.get_reference(context) {
             Ok(reference) => {
-                if reference == keyindex!(41) {
+                if reference == zid!(41) {
                     Ok(Self { value: false })
-                } else if reference == keyindex!(42) {
+                } else if reference == zid!(42) {
                     Ok(Self { value: true })
                 } else {
                     Err((
@@ -60,11 +60,11 @@ impl WfDataType for WfBoolean {
 
     fn get_key(&self, key: KeyIndex) -> Option<WfData> {
         if key == keyindex!(1, 1) {
-            Some(WfData::new_reference(keyindex!(40)))
+            Some(WfData::new_reference(zid!(40)))
         } else if key == keyindex!(40, 1) {
             match self.value {
-                true => Some(WfData::new_reference(keyindex!(41))),
-                false => Some(WfData::new_reference(keyindex!(42))),
+                true => Some(WfData::new_reference(zid!(41))),
+                false => Some(WfData::new_reference(zid!(42))),
             }
         } else {
             None
@@ -102,8 +102,8 @@ mod tests {
 
         // simple case, direct reference
         let boolean_construct = WfData::from_map(btree_map! {
-            keyindex!(1, 1) => WfData::new_reference(keyindex!(40)),
-            keyindex!(40, 1) => WfData::new_reference(keyindex!(42))
+            keyindex!(1, 1) => WfData::new_reference(zid!(40)),
+            keyindex!(40, 1) => WfData::new_reference(zid!(42))
         });
         assert_eq!(
             WfBoolean::parse(boolean_construct, &context).unwrap(),
@@ -113,9 +113,7 @@ mod tests {
         // simple case, reference
         assert_eq!(
             WfBoolean::parse(
-                WfData::new_reference(keyindex!(41))
-                    .evaluate(&context)
-                    .unwrap(),
+                WfData::new_reference(zid!(41)).evaluate(&context).unwrap(),
                 &context
             )
             .unwrap(),
@@ -124,8 +122,8 @@ mod tests {
 
         // test simple failure
         let incorrect_boolean = WfData::from_map(btree_map! {
-            keyindex!(1, 1) => WfData::new_reference(keyindex!(40)),
-            keyindex!(40, 1) => WfData::new_reference(keyindex!(39))
+            keyindex!(1, 1) => WfData::new_reference(zid!(40)),
+            keyindex!(40, 1) => WfData::new_reference(zid!(39))
         });
         WfBoolean::parse(incorrect_boolean, &context).unwrap_err();
     }

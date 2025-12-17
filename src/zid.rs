@@ -1,13 +1,16 @@
-use std::num::{NonZero, NonZeroU32, ParseIntError, TryFromIntError};
+use std::{
+    fmt::Display,
+    num::{NonZero, NonZeroU32, ParseIntError, TryFromIntError},
+};
 
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Copy)]
 pub struct Zid(pub NonZero<u32>);
 
 /// A Zid, a.k.a a reference to a persistent object
 #[derive(Error, Debug, Clone, PartialEq)]
-pub enum ZidError {
+pub enum ZidParseError {
     #[error("Zid does not start with the letter Z")]
     DoNotStartWithZ,
     #[error("The Zid is an empty string")]
@@ -19,27 +22,41 @@ pub enum ZidError {
 }
 
 impl Zid {
-    pub fn from_str(source: &str) -> Result<Self, ZidError> {
+    pub fn get_z(&self) -> NonZero<u32> {
+        self.0
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(source: &str) -> Result<Self, ZidParseError> {
         let mut chars_iter = source.chars();
         if let Some(first_char) = chars_iter.next() {
             if first_char != 'Z' {
-                return Err(ZidError::DoNotStartWithZ);
+                return Err(ZidParseError::DoNotStartWithZ);
             }
         } else {
-            return Err(ZidError::Empty);
+            return Err(ZidParseError::Empty);
         }
 
-        let number: u32 = chars_iter.as_str().parse().map_err(ZidError::CantParse)?;
+        let number: u32 = chars_iter
+            .as_str()
+            .parse()
+            .map_err(ZidParseError::CantParse)?;
 
         Self::from_u32(number)
     }
 
-    pub fn from_u32(source: u32) -> Result<Self, ZidError> {
-        Ok(Self(source.try_into().map_err(ZidError::IsZero)?))
+    pub fn from_u32(source: u32) -> Result<Self, ZidParseError> {
+        Ok(Self(source.try_into().map_err(ZidParseError::IsZero)?))
     }
 
     pub const fn from_u32_panic(source: u32) -> Self {
         Self(NonZeroU32::new(source).unwrap())
+    }
+}
+
+impl Display for Zid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Z{}", self.0)
     }
 }
 

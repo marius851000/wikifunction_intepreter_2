@@ -21,7 +21,7 @@ impl WfDataType for WfString {
 
     fn get_key(&self, key: KeyIndex) -> Option<WfData> {
         if key == keyindex!(1, 1) {
-            Some(WfData::new_reference(keyindex!(6)))
+            Some(WfData::new_reference(zid!(6)))
         } else if key == keyindex!(6, 1) {
             Some(self.clone().into_wf_data())
         } else {

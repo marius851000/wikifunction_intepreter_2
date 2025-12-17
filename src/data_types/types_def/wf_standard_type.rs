@@ -1,11 +1,11 @@
 use crate::{
-    KeyIndex, RcI,
+    KeyIndex, RcI, Zid,
     data_types::{WfData, WfDataType, types_def::WfTypeGeneric},
 };
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct WfStandardTypeInner {
-    pub identity_ref: KeyIndex,
+    pub identity_ref: Zid,
     pub keys: WfData,
     pub validator: WfData,
     pub equality: WfData,
@@ -35,7 +35,7 @@ impl WfDataType for WfStandardType {
 
     fn get_key(&self, key: KeyIndex) -> Option<WfData> {
         if key == keyindex!(1, 1) {
-            Some(WfData::new_reference(keyindex!(4)))
+            Some(WfData::new_reference(zid!(4)))
         } else if key == keyindex!(4, 1) {
             Some(WfData::new_reference(self.inner.identity_ref))
         } else if key == keyindex!(4, 2) {

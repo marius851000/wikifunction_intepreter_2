@@ -1,15 +1,15 @@
 use crate::{
-    EvalError, ExecutionContext, KeyIndex,
+    EvalError, ExecutionContext, KeyIndex, Zid,
     data_types::{WfData, WfDataType},
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WfReference {
-    pub to: KeyIndex,
+    pub to: Zid,
 }
 
 impl WfReference {
-    pub fn new(to: KeyIndex) -> Self {
+    pub fn new(to: Zid) -> Self {
         Self { to }
     }
 }
@@ -45,7 +45,7 @@ impl WfDataType for WfReference {
         }
     }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<KeyIndex, (EvalError, Self)> {
+    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
         Ok(self.to)
     }
 }

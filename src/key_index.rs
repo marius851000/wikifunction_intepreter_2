@@ -29,7 +29,7 @@ pub enum KeyIndexParseError {
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 /// At least one of the value is Some
-pub struct KeyIndex(Option<NonZeroU32>, Option<NonZeroU32>);
+pub struct KeyIndex(Option<NonZeroU32>, Option<NonZeroU32>); //TODO: disallow using Z alone?
 
 impl KeyIndex {
     pub fn get_z(&self) -> Option<NonZeroU32> {
@@ -118,7 +118,7 @@ impl KeyIndex {
         )
     }
 
-    pub fn to_string(&self) -> String {
+    fn to_string_inner(self) -> String {
         if let Some(z) = self.0 {
             if let Some(k) = self.1 {
                 format!("Z{}K{}", z, k)
@@ -135,7 +135,7 @@ impl KeyIndex {
 
 impl Display for KeyIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.to_string())
+        f.write_str(&self.to_string_inner())
     }
 }
 

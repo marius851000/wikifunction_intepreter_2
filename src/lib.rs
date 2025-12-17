@@ -6,7 +6,7 @@ pub use key_index::{KeyIndex, KeyIndexParseError};
 
 #[macro_use]
 mod zid;
-pub use zid::{Zid, ZidError};
+pub use zid::{Zid, ZidParseError};
 
 pub mod data_types;
 

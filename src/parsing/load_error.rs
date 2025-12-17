@@ -1,12 +1,14 @@
 use sonic_rs::Value;
 use thiserror::Error;
 
-use crate::{KeyIndex, KeyIndexParseError};
+use crate::{KeyIndex, KeyIndexParseError, ZidParseError};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum LoadError {
-    #[error("Couldn’t parse ZID {0}")]
-    CantParseZid(String, #[source] KeyIndexParseError),
+    #[error("Couldn’t parse Key index {0}")]
+    CantParseKeyIndex(String, #[source] KeyIndexParseError),
+    #[error("Can’t parse ZID")]
+    CantParseZID(String, #[source] ZidParseError),
     #[error("inside object entry {0}")]
     InsideMap(KeyIndex, Box<LoadError>),
     #[error("unsupported data type in {0}")]

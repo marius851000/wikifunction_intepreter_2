@@ -2,7 +2,7 @@ use std::{error::Error, fmt::Display};
 
 use thiserror::Error;
 
-use crate::{KeyIndex, KeyIndexParseError};
+use crate::{KeyIndex, KeyIndexParseError, Zid};
 
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum EvalErrorKind {
@@ -12,12 +12,12 @@ pub enum EvalErrorKind {
     MissingKey(KeyIndex),
     #[error("Expected reference")]
     NotAReference,
-    #[error("Wrong type, got {0}, expected {1}")]
-    WrongType(KeyIndex, KeyIndex),
+    #[error("Wrong ZID type, got {0}, expected {1}")]
+    WrongType(Zid, Zid),
     #[error("Incorrect identity reference for boolean {0}")]
-    IncorrectIdentityForBoolean(KeyIndex),
+    IncorrectIdentityForBoolean(Zid),
     #[error("Persistent object {0} does not exist")]
-    MissingPersistentObject(KeyIndex),
+    MissingPersistentObject(Zid),
     #[error("Not a standard type that can be expressed as just a ZID")]
     NotStandardType,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]

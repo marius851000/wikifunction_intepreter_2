@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use sonic_rs::{JsonValueTrait, Object, Value, ValueRef};
 
 use crate::{
-    KeyIndex,
+    KeyIndex, Zid,
     data_types::{WfData, WfDataType, WfReference, WfString, WfUntyped},
     parsing::LoadError,
 };
@@ -39,7 +39,8 @@ pub fn parse_object(source: &Object) -> Result<WfData, LoadError> {
     // standard situation
     let mut temp_map = BTreeMap::new();
     for (k, v) in source.iter() {
-        let zid = KeyIndex::from_str(k).map_err(|e| LoadError::CantParseZid(k.to_string(), e))?;
+        let zid =
+            KeyIndex::from_str(k).map_err(|e| LoadError::CantParseKeyIndex(k.to_string(), e))?;
         let inner_object = parse_value(v).map_err(|e| LoadError::InsideMap(zid, Box::new(e)))?;
         temp_map.insert(zid, inner_object);
     }
@@ -55,8 +56,8 @@ pub fn parse_str(source: &str) -> Result<WfData, LoadError> {
             if first_char.is_ascii_uppercase() {
                 match first_char {
                     'Z' => {
-                        let zid = KeyIndex::from_str(source)
-                            .map_err(|e| LoadError::CantParseZid(source.to_string(), e))?;
+                        let zid = Zid::from_str(source)
+                            .map_err(|e| LoadError::CantParseZID(source.to_string(), e))?;
                         Ok(WfReference::new(zid).into_wf_data())
                     }
                     _ => Err(LoadError::UpperCaseFirstCharOutsideZ6(source.to_string())),
@@ -91,7 +92,7 @@ mod tests {
     pub fn test_load_reference() {
         assert_eq!(
             parse_str("Z4").unwrap(),
-            WfReference::new(keyindex!(4)).into_wf_data()
+            WfReference::new(zid!(4)).into_wf_data()
         );
 
         parse_str("Z4K1").unwrap_err();

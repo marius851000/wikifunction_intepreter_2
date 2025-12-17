@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    EvalError, ExecutionContext, KeyIndex, RcI,
+    EvalError, ExecutionContext, KeyIndex, RcI, Zid,
     data_types::{WfBoolean, WfData, WfDataType, types_def::WfTypeGeneric},
 };
 
@@ -61,7 +61,7 @@ impl WfDataType for WfUntyped {
         };
         match z1k1.get_type_zid(context) {
             Ok((type_zid, _z1k1)) => {
-                if type_zid == keyindex!(40) {
+                if type_zid == zid!(40) {
                     match WfBoolean::parse(self.into_wf_data(), context) {
                         Ok(v) => return Ok(v.into_wf_data()),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
@@ -88,7 +88,7 @@ impl WfDataType for WfUntyped {
         }
     }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<KeyIndex, (EvalError, Self)> {
+    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
         todo!();
     }
 

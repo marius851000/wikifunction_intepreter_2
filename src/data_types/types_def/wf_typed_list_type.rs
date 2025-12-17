@@ -26,9 +26,9 @@ impl WfDataType for WfTypedListType {
     fn get_key(&self, key: KeyIndex) -> Option<WfData> {
         // map that as a function call
         if key == keyindex!(1, 1) {
-            Some(WfData::new_reference(keyindex!(7)))
+            Some(WfData::new_reference(zid!(7)))
         } else if key == keyindex!(7, 1) {
-            Some(WfData::new_reference(keyindex!(881)))
+            Some(WfData::new_reference(zid!(881)))
         } else if key == keyindex!(881, 1) {
             Some((*self.r#type).clone().into_wf_data())
         } else {
@@ -57,9 +57,7 @@ mod tests {
     fn test_get_list_key() {
         let global_context = GlobalContext::default_for_test();
         let context = ExecutionContext::default_for_global(Arc::new(global_context));
-        let boolean_type = WfData::new_reference(keyindex!(40))
-            .evaluate(&context)
-            .unwrap();
+        let boolean_type = WfData::new_reference(zid!(40)).evaluate(&context).unwrap();
         let boolean_type_clone = boolean_type.clone();
         let test_typed_list_typed = WfTypedListType {
             r#type: RcI::new(WfTypeGeneric::parse(boolean_type, &context).unwrap()),
@@ -83,7 +81,7 @@ mod tests {
                 .get_key(keyindex!(1, 1))
                 .unwrap()
                 .into_wf_data()
-                .equality(WfData::new_reference(keyindex!(7)), &context)
+                .equality(WfData::new_reference(zid!(7)), &context)
                 .unwrap()
         );
     }
