@@ -29,7 +29,7 @@ impl From<WfStandardTypeInner> for WfStandardType {
 }
 
 impl WfDataType for WfStandardType {
-    fn get_identity_key(&self) -> Option<KeyIndex> {
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
         Some(keyindex!(4, 1))
     }
 

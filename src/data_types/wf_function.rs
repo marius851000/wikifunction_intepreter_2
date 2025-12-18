@@ -58,13 +58,9 @@ impl WfFunction {
             Ok(v) => v,
         };
 
-        let identity = match data.get_key_err(keyindex!(8, 5)) {
+        let identity = match data.get_identity_zid(&context, keyindex!(8, 5)) {
+            Ok(k) => k,
             Err(e) => return Err((e, data)),
-            Ok(v) => match v.get_reference(context) {
-                //TODO: handle case where this might have been dereferenced for whatever reason. We need to do that recursively on identity
-                Err((e, _)) => return Err((e.inside(keyindex!(8, 5)), data)),
-                Ok(v) => v,
-            },
         };
 
         Ok(WfFunction(RcI::new(WfFunctionInner {
@@ -82,7 +78,7 @@ impl WfDataType for WfFunction {
         WfData::WfFunction(self)
     }
 
-    fn get_identity_key(&self) -> Option<KeyIndex> {
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
         Some(keyindex!(8, 5))
     }
 
@@ -125,6 +121,8 @@ impl WfDataType for WfFunction {
 
 #[cfg(test)]
 mod tests {
+    use std::u32;
+
     use map_macro::btree_map;
 
     use crate::{
@@ -134,8 +132,7 @@ mod tests {
 
     #[test]
     fn test_parse_function() {
-        let global_context = RcI::new(GlobalContext::default_for_test());
-        let context = ExecutionContext::default_for_global(global_context);
+        let mut global_context = GlobalContext::default_for_test();
 
         let unv = WfData::unvalid(EvalErrorKind::TestData);
         let function_unparsed = WfData::from_map(btree_map! {
@@ -146,6 +143,10 @@ mod tests {
             keyindex!(8, 4) => unv.clone(),
             keyindex!(8, 5) => WfData::new_reference(zid!(u32::MAX))
         });
+        global_context.add_direct_no_persistent_data(zid!(u32::MAX), function_unparsed.clone());
+        // need to be here for recursive identity lookup.
+
+        let context = ExecutionContext::default_for_global(RcI::new(global_context));
 
         let function = WfFunction::parse(function_unparsed.clone(), &context).unwrap();
 

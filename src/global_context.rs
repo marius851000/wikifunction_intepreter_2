@@ -36,6 +36,10 @@ impl GlobalContext {
         Ok(())
     }
 
+    pub fn add_direct_no_persistent_data(&mut self, zid: Zid, data: WfData) {
+        self.objects.insert(zid, data);
+    }
+
     pub fn from_wikifunction_dump<F: BufRead>(reader: F) -> Result<Self, anyhow::Error> {
         let mut global_context = Self::default();
         for result in parse_mediawiki_dump_reboot::parse(reader) {

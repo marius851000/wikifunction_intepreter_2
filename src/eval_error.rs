@@ -20,6 +20,8 @@ pub enum EvalErrorKind {
     MissingPersistentObject(Zid),
     #[error("Not a standard type that can be expressed as just a ZID")]
     NotStandardType,
+    #[error("Expected to find a type an identity key")]
+    NoIdentity,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }
@@ -28,6 +30,7 @@ pub enum EvalErrorKind {
 #[allow(dead_code)] //TODO:
 pub enum TraceEntry {
     Inside(KeyIndex),
+    InsideReference(Zid),
     Text(String),
 }
 
@@ -54,8 +57,13 @@ impl EvalError {
         self
     }
 
-    pub fn inside(mut self, zid: KeyIndex) -> Self {
-        self.trace.push(TraceEntry::Inside(zid));
+    pub fn inside(mut self, key: KeyIndex) -> Self {
+        self.trace.push(TraceEntry::Inside(key));
+        self
+    }
+
+    pub fn inside_reference_to(mut self, zid: Zid) -> Self {
+        self.trace.push(TraceEntry::InsideReference(zid));
         self
     }
 }

@@ -34,7 +34,7 @@ impl WfUntyped {
 }
 
 impl WfDataType for WfUntyped {
-    fn get_identity_key(&self) -> Option<KeyIndex> {
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
         todo!("identity for Untyped? Is that even possible without consumption?")
     }
 

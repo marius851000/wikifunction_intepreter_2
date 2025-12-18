@@ -15,8 +15,9 @@ impl WfString {
 }
 
 impl WfDataType for WfString {
-    fn get_identity_key(&self) -> Option<KeyIndex> {
-        Some(keyindex!(6, 1)) // that’s quite a special case, but still a valid identity
+    /// Return None. z6k1 is indeed an identity, but not identity that point to ZID.
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
+        None
     }
 
     fn get_key(&self, key: KeyIndex) -> Option<WfData> {

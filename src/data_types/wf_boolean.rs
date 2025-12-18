@@ -54,7 +54,7 @@ impl WfBoolean {
 }
 
 impl WfDataType for WfBoolean {
-    fn get_identity_key(&self) -> Option<KeyIndex> {
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
         Some(keyindex!(40, 1))
     }
 

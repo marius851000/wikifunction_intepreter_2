@@ -6,7 +6,8 @@ pub trait WfDataType: Debug + Clone {
     fn into_wf_data(self) -> WfData;
     /// used to know that this structure is one of the final type. Used to know that inequality mean two object with this property does not represent the same thing.
     fn is_fully_realised(&self) -> bool;
-    fn get_identity_key(&self) -> Option<KeyIndex>;
+    /// Return the key that store the identity as a reference to itself. Note that it expect data to be either a direct WfReference to self, or such a dereferenced reference (which shouldn’t usually occur).
+    fn get_identity_zid_key(&self) -> Option<KeyIndex>;
     /// does not evaluate
     fn get_key(&self, key: KeyIndex) -> Option<WfData>;
     /// does not evaluate
@@ -29,6 +30,34 @@ pub trait WfDataType: Debug + Clone {
             Ok(data)
         } else {
             Err(EvalError::missing_key(key))
+        }
+    }
+
+    /// Default implementation makes use of self.get_identity_zid_key and recursive calls
+    /// The only reason to implement this manually if for performance. In the fast path, it should only clone a reference, if not optimised out.
+    /// The reason is ask for a key is in case of using it over WfUntyped, as it is often used inside parsing function
+    fn get_identity_zid(
+        &self,
+        context: &ExecutionContext,
+        identity_key: KeyIndex,
+    ) -> Result<Zid, EvalError> {
+        let identity_value = match self.get_key_err(identity_key) {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        };
+
+        if let WfData::WfReference(reference) = identity_value {
+            return Ok(reference.to);
+        }
+
+        let evaluated = match identity_value.get_reference(context) {
+            Ok(k) => return Ok(k),
+            Err((_, evaluated)) => evaluated,
+        };
+
+        match evaluated.get_identity_zid(context, identity_key) {
+            Ok(k) => return Ok(k),
+            Err(e) => Err(e.inside(identity_key)),
         }
     }
 }
@@ -74,9 +103,9 @@ macro_rules! impl_wf_data_type {
                 }
             }
 
-            fn get_identity_key(&self) -> Option<$crate::KeyIndex> {
+            fn get_identity_zid_key(&self) -> Option<$crate::KeyIndex> {
                 match self {
-                    $(Self::$variant($inner) => $inner.get_identity_key(),)+
+                    $(Self::$variant($inner) => $inner.get_identity_zid_key(),)+
                 }
             }
 

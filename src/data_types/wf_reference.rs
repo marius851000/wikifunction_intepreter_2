@@ -15,7 +15,7 @@ impl WfReference {
 }
 
 impl WfDataType for WfReference {
-    fn get_identity_key(&self) -> Option<KeyIndex> {
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
         unreachable!("shouldn’t access a reference directly")
     }
 
@@ -39,7 +39,9 @@ impl WfDataType for WfReference {
         match context.get_global().get_object_value(&self.to) {
             Err(e) => Err((e, self)),
             Ok(v) => match v.evaluate(context) {
-                Err((e, _data)) => Err((e.inside(keyindex!(9, 1)), self)),
+                Err((e, _data)) => {
+                    Err((e.inside(keyindex!(9, 1)).inside_reference_to(self.to), self))
+                }
                 Ok(v) => Ok(v),
             },
         }

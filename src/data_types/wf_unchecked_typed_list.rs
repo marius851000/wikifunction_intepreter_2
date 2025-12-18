@@ -19,7 +19,7 @@ impl WfDataType for WfUncheckedTypedList {
         WfData::WfUncheckedTypedList(self)
     }
 
-    fn get_identity_key(&self) -> Option<KeyIndex> {
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
         None
     }
 

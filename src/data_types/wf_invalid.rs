@@ -19,7 +19,7 @@ impl WfDataType for WfInvalid {
         None
     }
 
-    fn get_identity_key(&self) -> Option<KeyIndex> {
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
         None
     }
 

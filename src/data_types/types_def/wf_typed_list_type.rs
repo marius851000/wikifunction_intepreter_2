@@ -19,7 +19,7 @@ impl WfDataType for WfTypedListType {
         true
     }
 
-    fn get_identity_key(&self) -> Option<crate::KeyIndex> {
+    fn get_identity_zid_key(&self) -> Option<crate::KeyIndex> {
         None
     }
 
