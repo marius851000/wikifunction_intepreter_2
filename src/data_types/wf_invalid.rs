@@ -1,5 +1,5 @@
 use crate::{
-    EvalErrorKind, KeyIndex,
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex,
     data_types::{WfData, WfDataType},
 };
 
@@ -33,5 +33,9 @@ impl WfDataType for WfInvalid {
 
     fn is_fully_realised(&self) -> bool {
         true
+    }
+
+    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+        return Err((EvalError::from_kind(self.reason.clone()), self));
     }
 }

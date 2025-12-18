@@ -20,10 +20,19 @@ pub use wf_untyped::WfUntyped;
 mod wf_invalid;
 pub use wf_invalid::WfInvalid;
 
-mod wf_unchecked_typed_list;
-pub use wf_unchecked_typed_list::{WfUncheckedTypedList, WfUncheckedTypedListInner};
+mod wf_typed_list;
+pub use wf_typed_list::WfTypedList;
 
 mod wf_function;
 pub use wf_function::{WfFunction, WfFunctionInner};
 
+mod wf_function_call;
+pub use wf_function_call::WfFunctionCall;
+
 pub mod types_def;
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum MaybeEvaluated<T: std::fmt::Debug + PartialEq + Clone> {
+    Unchecked(WfData),
+    Valid(T),
+}

@@ -1,10 +1,12 @@
 use std::{collections::BTreeMap, num::NonZeroU32};
 
+#[cfg(test)]
+use crate::EvalErrorKind;
 use crate::{
-    EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
+    EvalError, ExecutionContext, KeyIndex, Zid,
     data_types::{
-        WfBoolean, WfDataType, WfFunction, WfInvalid, WfReference, WfString, WfUncheckedTypedList,
-        WfUntyped, types_def::WfTypeGeneric,
+        WfBoolean, WfDataType, WfFunction, WfFunctionCall, WfInvalid, WfReference, WfString,
+        WfTypedList, WfUntyped, types_def::WfTypeGeneric,
     },
 };
 
@@ -18,8 +20,9 @@ pub enum WfData {
     WfUntyped(WfUntyped),
     WfType(WfTypeGeneric),
     WfInvalid(WfInvalid),
-    WfUncheckedTypedList(WfUncheckedTypedList),
+    WfUncheckedTypedList(WfTypedList),
     WfFunction(WfFunction),
+    WfFunctionCall(WfFunctionCall),
 }
 
 impl_wf_data_type!(
@@ -32,7 +35,8 @@ impl_wf_data_type!(
     WfType(d),
     WfInvalid(d),
     WfUncheckedTypedList(d),
-    WfFunction(d)
+    WfFunction(d),
+    WfFunctionCall(d)
 );
 
 impl WfData {
@@ -108,23 +112,6 @@ impl WfData {
         }
 
         Ok(true)
-    }
-
-    // TODO: move to a check_identity?
-    pub fn check_type_by_zid(
-        self,
-        expected_zid: Zid,
-        context: &ExecutionContext,
-    ) -> Result<WfData, (EvalError, WfData)> {
-        let (got_zid, value) = self.get_type_zid(context)?;
-        if expected_zid != got_zid {
-            Err((
-                EvalError::from_kind(EvalErrorKind::WrongType(got_zid, expected_zid)),
-                value,
-            ))
-        } else {
-            Ok(value)
-        }
     }
 
     pub fn get_type_zid(

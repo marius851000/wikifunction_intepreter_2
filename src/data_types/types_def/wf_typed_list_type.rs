@@ -1,13 +1,61 @@
 use crate::{
-    KeyIndex, RcI,
+    EvalError, ExecutionContext, KeyIndex, RcI,
     data_types::{WfData, WfDataType, types_def::WfTypeGeneric},
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WfTypedListType {
-    r#type: RcI<WfTypeGeneric>, // this Rc is to avoid recursive declaration
-                                // hmm... this won’t work for parsing... And I can’t have object who haven’t been fully type-checked...
-                                // that’s a problem for the linked list implementation. An unchecked typed list like WfUntyped
+    r#type: RcI<WfTypeGeneric>,
+}
+
+impl WfTypedListType {
+    pub fn new(inner_type: WfTypeGeneric) -> Self {
+        Self {
+            r#type: RcI::new(inner_type),
+        }
+    }
+
+    pub fn parse(data: WfData, context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
+        if let WfData::WfType(WfTypeGeneric::WfTypedListType(v)) = data {
+            return Ok(v);
+        }
+        data.assert_evaluated();
+        // check type of this
+        match data.get_key_err(keyindex!(1, 1)) {
+            Ok(this_type) => {
+                if let Err((e, _)) = this_type.check_identity_zid(context, zid!(7)) {
+                    return Err((e.inside(keyindex!(1, 1)), data));
+                }
+            }
+            Err(e) => return Err((e, data)),
+        };
+
+        // check function to be called
+        match data.get_key_err(keyindex!(7, 1)) {
+            Ok(this_function) => {
+                if let Err((e, _)) = this_function.check_identity_zid(context, zid!(881)) {
+                    return Err((e.inside(keyindex!(7, 1)), data));
+                }
+            }
+            Err(e) => return Err((e, data)),
+        };
+
+        // obtain type
+        let r#type = match data.get_key_err(keyindex!(881, 1)) {
+            Err(e) => return Err((e, data)),
+            Ok(unparsed_type) => match unparsed_type.evaluate(context) {
+                Err((e, _)) => return Err((e.inside(keyindex!(881, 1)), data)),
+                Ok(unparsed_type) => match WfTypeGeneric::parse(unparsed_type, context) {
+                    Err((e, _)) => return Err((e.inside(keyindex!(881, 1)), data)),
+                    Ok(v) => v,
+                },
+            },
+        };
+
+        Ok(Self {
+            r#type: RcI::new(r#type),
+        })
+    }
 }
 
 impl WfDataType for WfTypedListType {
@@ -16,7 +64,7 @@ impl WfDataType for WfTypedListType {
     }
 
     fn is_fully_realised(&self) -> bool {
-        true
+        false
     }
 
     fn get_identity_zid_key(&self) -> Option<crate::KeyIndex> {
@@ -43,6 +91,8 @@ impl WfDataType for WfTypedListType {
 
 #[cfg(test)]
 mod tests {
+    use map_macro::btree_map;
+
     use crate::{
         ExecutionContext, GlobalContext, RcI,
         data_types::{
@@ -82,5 +132,29 @@ mod tests {
                 .equality(WfData::new_reference(zid!(7)), &context)
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn test_parse() {
+        let global_context = GlobalContext::default_for_test();
+        let context = ExecutionContext::default_for_global(RcI::new(global_context));
+        let type_def = WfData::from_map(btree_map! {
+            keyindex!(1, 1) => WfData::new_reference(zid!(7)),
+            keyindex!(7, 1) => WfData::new_reference(zid!(881)),
+            keyindex!(881, 1) => WfData::new_reference(zid!(40))
+        });
+
+        assert_eq!(
+            WfTypedListType::parse(type_def.clone(), &context)
+                .unwrap()
+                .r#type
+                .get_identity_zid(&context, keyindex!(4, 1))
+                .unwrap(),
+            zid!(40)
+        );
+
+        let evaluated = type_def.clone().evaluate(&context).unwrap();
+
+        assert!(evaluated.equality(type_def, &context).unwrap())
     }
 }

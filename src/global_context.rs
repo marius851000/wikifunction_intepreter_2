@@ -64,6 +64,16 @@ impl GlobalContext {
 
         Self {
             objects: btree_map! {
+                zid!(14) => <WfStandardType>::from(WfStandardTypeInner {
+                    identity_ref: zid!(14),
+                    keys: WfData::unvalid(EvalErrorKind::TestData),
+                    validator: WfData::unvalid(EvalErrorKind::TestData),
+                    equality: WfData::unvalid(EvalErrorKind::TestData),
+                    display_function: WfData::unvalid(EvalErrorKind::TestData),
+                    reading_function: WfData::unvalid(EvalErrorKind::TestData),
+                    type_converters_to_code: WfData::unvalid(EvalErrorKind::TestData),
+                    type_converters_from_code: WfData::unvalid(EvalErrorKind::TestData),
+                }).into_wf_data(),
                 zid!(40) => <WfStandardType>::from(WfStandardTypeInner {
                     identity_ref: zid!(40),
                     keys: WfData::unvalid(EvalErrorKind::TestData),

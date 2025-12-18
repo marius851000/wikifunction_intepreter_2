@@ -3,10 +3,9 @@ use std::collections::BTreeMap;
 use sonic_rs::{Array, JsonValueTrait, Object, Value, ValueRef};
 
 use crate::{
-    KeyIndex, RcI, Zid,
+    KeyIndex, Zid,
     data_types::{
-        WfData, WfDataType, WfReference, WfString, WfUncheckedTypedList, WfUncheckedTypedListInner,
-        WfUntyped,
+        MaybeEvaluated, WfData, WfDataType, WfReference, WfString, WfTypedList, WfUntyped,
     },
     parsing::LoadError,
 };
@@ -74,10 +73,7 @@ pub fn parse_array(array: &Array) -> Result<WfData, LoadError> {
         );
     }
 
-    Ok(
-        WfUncheckedTypedList(RcI::new(WfUncheckedTypedListInner { r#type, entries }))
-            .into_wf_data(),
-    )
+    Ok(WfTypedList::new(MaybeEvaluated::Unchecked(r#type), entries).into_wf_data())
 }
 
 #[cfg(test)]
@@ -85,11 +81,7 @@ mod tests {
     use sonic_rs::{Array, Object, from_str};
 
     use crate::{
-        RcI,
-        data_types::{
-            WfData, WfDataType, WfReference, WfString, WfUncheckedTypedList,
-            WfUncheckedTypedListInner,
-        },
+        data_types::{MaybeEvaluated, WfData, WfDataType, WfReference, WfString, WfTypedList},
         parsing::parse_json::{parse_array, parse_object, parse_str},
     };
 
@@ -119,15 +111,13 @@ mod tests {
     fn test_array() {
         assert_eq!(
             parse_array(&from_str::<Array>(r#"["Z6", "hello", "world"]"#).unwrap()).unwrap(),
-            WfData::WfUncheckedTypedList(WfUncheckedTypedList(RcI::new(
-                WfUncheckedTypedListInner {
-                    r#type: WfData::new_reference(zid!(6)),
-                    entries: vec![
-                        WfString::new("hello").into_wf_data(),
-                        WfString::new("world").into_wf_data()
-                    ]
-                }
-            )))
+            WfData::WfUncheckedTypedList(WfTypedList::new(
+                MaybeEvaluated::Unchecked(WfData::new_reference(zid!(6))),
+                vec![
+                    WfString::new("hello").into_wf_data(),
+                    WfString::new("world").into_wf_data()
+                ]
+            ))
         );
 
         parse_array(&from_str::<Array>(r#"[]"#).unwrap()).unwrap_err();

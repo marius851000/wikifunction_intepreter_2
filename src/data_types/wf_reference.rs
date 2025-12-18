@@ -27,6 +27,10 @@ impl WfDataType for WfReference {
         unreachable!("shouldn’t access a reference directly")
     }
 
+    fn should_be_evaluated_before_parsing(&self) -> bool {
+        return true;
+    }
+
     fn is_fully_realised(&self) -> bool {
         false
     }
@@ -47,7 +51,10 @@ impl WfDataType for WfReference {
         }
     }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
-        Ok(self.to)
+    fn get_reference(
+        self,
+        _context: &ExecutionContext,
+    ) -> Result<(Zid, WfData), (EvalError, WfData)> {
+        Ok((self.to, self.into_wf_data()))
     }
 }

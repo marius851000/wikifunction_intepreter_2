@@ -20,8 +20,15 @@ pub trait WfDataType: Debug + Clone {
         Ok(self.into_wf_data())
     }
 
-    fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
-        Err((EvalError::from_kind(EvalErrorKind::NotAReference), self))
+    /// This only return this reference, not recursive reference
+    fn get_reference(
+        self,
+        _context: &ExecutionContext,
+    ) -> Result<(Zid, WfData), (EvalError, WfData)> {
+        Err((
+            EvalError::from_kind(EvalErrorKind::NotAReference),
+            self.into_wf_data(),
+        ))
     }
 
     /// Like get_key, but if the key is missing, it mark the error as having the key missing, ready to be returned if not inside another key itself (maybe once the owned WfData is added to it)
@@ -30,6 +37,50 @@ pub trait WfDataType: Debug + Clone {
             Ok(data)
         } else {
             Err(EvalError::missing_key(key))
+        }
+    }
+
+    /// Like get_identity_zid, but return an error if the found identity key does not match expected value, and with early return if self is a reference to the identity
+    fn check_identity_zid(
+        self,
+        context: &ExecutionContext,
+        expected_value: Zid,
+    ) -> Result<WfData, (EvalError, WfData)> {
+        // fast path
+        let self2 = match self.get_reference(context) {
+            Ok((reference, consumed)) => {
+                if reference == expected_value {
+                    return Ok(consumed.into_wf_data());
+                } else {
+                    consumed
+                }
+            }
+            Err((_, consumed)) => consumed,
+        };
+
+        // slow path
+        let evaluated = match self2.evaluate(context) {
+            Ok(v) => v,
+            Err((e, n)) => return Err((e, n.into_wf_data())),
+        };
+
+        let identity_key = match evaluated.get_identity_zid_key() {
+            Some(k) => k,
+            _ => return Err((EvalError::from_kind(EvalErrorKind::NoIdentity), evaluated)),
+        };
+
+        let gotten = match evaluated.get_identity_zid(context, identity_key) {
+            Ok(zid) => zid,
+            Err(e) => return Err((e, evaluated)),
+        };
+
+        if gotten != expected_value {
+            Err((
+                EvalError::from_kind(EvalErrorKind::WrongType(gotten, expected_value)),
+                evaluated,
+            ))
+        } else {
+            Ok(evaluated)
         }
     }
 
@@ -51,13 +102,25 @@ pub trait WfDataType: Debug + Clone {
         }
 
         let evaluated = match identity_value.get_reference(context) {
-            Ok(k) => return Ok(k),
+            Ok(k) => return Ok(k.0),
             Err((_, evaluated)) => evaluated,
         };
 
         match evaluated.get_identity_zid(context, identity_key) {
             Ok(k) => return Ok(k),
             Err(e) => Err(e.inside(identity_key)),
+        }
+    }
+
+    fn should_be_evaluated_before_parsing(&self) -> bool {
+        return false;
+    }
+
+    /// To be called in .parse if it attempt to parse a reference or something like that should be .evaluated beforehand.
+    /// Sanity check. May be turned into a debug_panic eventually.
+    fn assert_evaluated(&self) {
+        if self.should_be_evaluated_before_parsing() {
+            panic!("internal error: should have been evaluated: {:?}", self)
         }
     }
 }
@@ -128,10 +191,10 @@ macro_rules! impl_wf_data_type {
                 }
             }
 
-            fn get_reference(self, context: &$crate::ExecutionContext) -> Result<$crate::Zid, ($crate::EvalError, Self)> {
+            fn get_reference(self, context: &$crate::ExecutionContext) -> Result<($crate::Zid, $crate::data_types::WfData), ($crate::EvalError, $crate::data_types::WfData)> {
                 match self {
                     $(Self::$variant($inner) =>
-                        $inner.get_reference(context).map_err(|(e, p)| (e, Self::$variant(p))),)+
+                        $inner.get_reference(context).map(|(z, p)| (z, p)).map_err(|(e, p)| (e, p)),)+
                 }
             }
         }

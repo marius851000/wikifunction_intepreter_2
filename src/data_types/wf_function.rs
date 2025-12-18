@@ -1,14 +1,14 @@
 use crate::{
     EvalError, ExecutionContext, KeyIndex, RcI, Zid,
-    data_types::{WfData, WfDataType, types_def::WfTypeGeneric},
+    data_types::{WfData, WfDataType, WfTypedList, types_def::WfTypeGeneric},
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WfFunctionInner {
     arguments: WfData, //TODO: WfArguments
     return_type: WfTypeGeneric,
-    testers: WfData,         // unevaluated
-    implementations: WfData, // unevaluated //TODO: WfImplementations (or Typed List)
+    testers: WfData,              // unevaluated
+    implementations: WfTypedList, //TODO: WfImplementations (or Typed List). Or keep it WfData so can be parsed without accessing the data?
     identity: Zid,
 }
 
@@ -20,11 +20,12 @@ impl WfFunction {
         if let WfData::WfFunction(v) = data {
             return Ok(v);
         }
+        data.assert_evaluated();
 
         // check type
         match data.get_key(keyindex!(1, 1)) {
             Some(r#type) => {
-                if let Err((e, _)) = r#type.check_type_by_zid(zid!(8), context) {
+                if let Err((e, _)) = r#type.check_identity_zid(context, zid!(8)) {
                     return Err((e.inside(keyindex!(1, 1)), data));
                 }
             }
@@ -55,7 +56,13 @@ impl WfFunction {
 
         let implementations = match data.get_key_err(keyindex!(8, 4)) {
             Err(e) => return Err((e, data)),
-            Ok(v) => v,
+            Ok(v) => match v.evaluate(context) {
+                Err((e, _)) => return Err((e.inside(keyindex!(8, 4)), data)),
+                Ok(v) => match WfTypedList::parse(v, context) {
+                    Err((e, _)) => return Err((e.inside(keyindex!(8, 4)), data)),
+                    Ok(v) => v,
+                },
+            },
         };
 
         let identity = match data.get_identity_zid(&context, keyindex!(8, 5)) {
@@ -99,7 +106,7 @@ impl WfDataType for WfFunction {
         } else if key == keyindex!(8, 3) {
             Some(self.0.testers.clone())
         } else if key == keyindex!(8, 4) {
-            Some(self.0.implementations.clone())
+            Some(self.0.implementations.clone().into_wf_data())
         } else if key == keyindex!(8, 5) {
             Some(WfData::new_reference(self.0.identity))
         } else {
@@ -127,7 +134,7 @@ mod tests {
 
     use crate::{
         EvalErrorKind, ExecutionContext, GlobalContext, RcI,
-        data_types::{WfData, WfFunction},
+        data_types::{MaybeEvaluated, WfData, WfDataType, WfFunction, WfTypedList},
     };
 
     #[test]
@@ -140,7 +147,7 @@ mod tests {
             keyindex!(8, 1) => unv.clone(),
             keyindex!(8, 2) => WfData::new_reference(zid!(40)),
             keyindex!(8, 3) => unv.clone(),
-            keyindex!(8, 4) => unv.clone(),
+            keyindex!(8, 4) => WfTypedList::new(MaybeEvaluated::Unchecked(WfData::new_reference(zid!(14))), Vec::new()).into_wf_data(),
             keyindex!(8, 5) => WfData::new_reference(zid!(u32::MAX))
         });
         global_context.add_direct_no_persistent_data(zid!(u32::MAX), function_unparsed.clone());
@@ -153,7 +160,7 @@ mod tests {
         assert_eq!(function.0.arguments, unv.clone());
         assert_eq!(function.0.return_type.get_type_zid().unwrap(), zid!(40));
         assert_eq!(function.0.testers, unv.clone());
-        assert_eq!(function.0.implementations, unv.clone());
+        //assert_eq!(function.0.implementations, unv.clone());
         assert_eq!(function.0.identity, zid!(u32::MAX));
     }
 }

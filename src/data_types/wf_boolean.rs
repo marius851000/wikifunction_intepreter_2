@@ -18,10 +18,11 @@ impl WfBoolean {
         if let WfData::WfBoolean(v) = data {
             return Ok(v);
         };
+        data.assert_evaluated();
         match data.get_key(keyindex!(1, 1)) {
             None => return Err((EvalError::missing_key(keyindex!(1, 1)), data)),
             Some(r#type) => {
-                if let Err((e, _content)) = r#type.check_type_by_zid(zid!(40), context) {
+                if let Err((e, _content)) = r#type.check_identity_zid(context, zid!(40)) {
                     return Err((e.inside(keyindex!(1, 1)), data));
                 }
             }
@@ -33,7 +34,7 @@ impl WfBoolean {
         };
 
         match identity.get_reference(context) {
-            Ok(reference) => {
+            Ok((reference, _identity)) => {
                 if reference == zid!(41) {
                     Ok(Self { value: false })
                 } else if reference == zid!(42) {
