@@ -51,6 +51,14 @@ impl WfDataType for WfTypedList {
         false
     }
 
+    fn should_be_evaluated_before_parsing(&self) -> bool {
+        if let MaybeEvaluated::Unchecked(_) = &*self.inner_type {
+            true
+        } else {
+            false
+        }
+    }
+
     fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
         if let MaybeEvaluated::Unchecked(_) = &*self.inner_type {
             // two level so we avoid this useless clone if already checked

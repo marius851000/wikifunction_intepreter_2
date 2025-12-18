@@ -57,10 +57,24 @@ impl GlobalContext {
     pub fn default_for_test() -> Self {
         use map_macro::btree_map;
 
-        use crate::data_types::{
-            WfBoolean, WfDataType,
-            types_def::{WfStandardType, WfStandardTypeInner},
+        use crate::{
+            RcI,
+            data_types::{
+                MaybeEvaluated, WfBoolean, WfDataType, WfFunction, WfFunctionInner, WfTypedList,
+                types_def::{WfStandardType, WfStandardTypeInner, WfTypeGeneric},
+            },
         };
+
+        let boolean_type = <WfStandardType>::from(WfStandardTypeInner {
+            identity_ref: zid!(40),
+            keys: WfData::unvalid(EvalErrorKind::TestData),
+            validator: WfData::unvalid(EvalErrorKind::TestData),
+            equality: WfData::unvalid(EvalErrorKind::TestData),
+            display_function: WfData::unvalid(EvalErrorKind::TestData),
+            reading_function: WfData::unvalid(EvalErrorKind::TestData),
+            type_converters_to_code: WfData::unvalid(EvalErrorKind::TestData),
+            type_converters_from_code: WfData::unvalid(EvalErrorKind::TestData),
+        });
 
         Self {
             objects: btree_map! {
@@ -74,8 +88,8 @@ impl GlobalContext {
                     type_converters_to_code: WfData::unvalid(EvalErrorKind::TestData),
                     type_converters_from_code: WfData::unvalid(EvalErrorKind::TestData),
                 }).into_wf_data(),
-                zid!(40) => <WfStandardType>::from(WfStandardTypeInner {
-                    identity_ref: zid!(40),
+                zid!(3) => <WfStandardType>::from(WfStandardTypeInner {
+                    identity_ref: zid!(3),
                     keys: WfData::unvalid(EvalErrorKind::TestData),
                     validator: WfData::unvalid(EvalErrorKind::TestData),
                     equality: WfData::unvalid(EvalErrorKind::TestData),
@@ -84,8 +98,16 @@ impl GlobalContext {
                     type_converters_to_code: WfData::unvalid(EvalErrorKind::TestData),
                     type_converters_from_code: WfData::unvalid(EvalErrorKind::TestData),
                 }).into_wf_data(),
+                zid!(40) => boolean_type.clone().into_wf_data(),
                 zid!(41) => WfBoolean::new(true).into_wf_data(),
-                zid!(42) => WfBoolean::new(false).into_wf_data()
+                zid!(42) => WfBoolean::new(false).into_wf_data(),
+                zid!(844) => WfFunction(RcI::new(WfFunctionInner {
+                    arguments: WfTypedList::new(MaybeEvaluated::Unchecked(WfData::new_reference(zid!(3))), vec![WfData::unvalid(EvalErrorKind::TestData); 2]),
+                    identity: zid!(844),
+                    implementations: WfTypedList::new(MaybeEvaluated::Unchecked(WfData::new_reference(zid!(14))), Vec::new()),
+                    return_type: WfTypeGeneric::WfStandardType(boolean_type),
+                    testers: WfData::unvalid(EvalErrorKind::TestData)
+                })).into_wf_data()
             },
         }
     }

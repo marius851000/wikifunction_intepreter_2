@@ -5,15 +5,15 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WfFunctionInner {
-    arguments: WfData, //TODO: WfArguments
-    return_type: WfTypeGeneric,
-    testers: WfData,              // unevaluated
-    implementations: WfTypedList, //TODO: WfImplementations (or Typed List). Or keep it WfData so can be parsed without accessing the data?
-    identity: Zid,
+    pub arguments: WfTypedList, //TODO: WfArguments
+    pub return_type: WfTypeGeneric,
+    pub testers: WfData,              // unevaluated
+    pub implementations: WfTypedList, //TODO: WfImplementations (or Typed List). Or keep it WfData so can be parsed without accessing the data?
+    pub identity: Zid,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct WfFunction(RcI<WfFunctionInner>);
+pub struct WfFunction(pub RcI<WfFunctionInner>);
 
 impl WfFunction {
     pub fn parse(data: WfData, context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
@@ -32,10 +32,15 @@ impl WfFunction {
             _ => return Err((EvalError::missing_key(keyindex!(1, 1)), data)),
         };
 
-        //TODO: turn that pattern into a macro. The variable are the function call and the data to insert.
         let arguments = match data.get_key_err(keyindex!(8, 1)) {
-            Ok(v) => v,
             Err(e) => return Err((e, data)),
+            Ok(v) => match v.evaluate(context) {
+                Err((e, _)) => return Err((e.inside(keyindex!(8, 1)), data)),
+                Ok(v) => match WfTypedList::parse(v, context) {
+                    Err((e, _)) => return Err((e.inside(keyindex!(8, 1)), data)),
+                    Ok(v) => v,
+                },
+            },
         };
 
         let return_type = match data.get_key_err(keyindex!(8, 2)) {
@@ -100,7 +105,7 @@ impl WfDataType for WfFunction {
         if key == keyindex!(1, 1) {
             Some(WfData::new_reference(zid!(8)))
         } else if key == keyindex!(8, 1) {
-            Some(self.0.arguments.clone())
+            Some(self.0.arguments.clone().into_wf_data())
         } else if key == keyindex!(8, 2) {
             Some(self.0.return_type.clone().into_wf_data())
         } else if key == keyindex!(8, 3) {
@@ -144,7 +149,7 @@ mod tests {
         let unv = WfData::unvalid(EvalErrorKind::TestData);
         let function_unparsed = WfData::from_map(btree_map! {
             keyindex!(1, 1) => WfData::new_reference(zid!(8)),
-            keyindex!(8, 1) => unv.clone(),
+            keyindex!(8, 1) => WfTypedList::new(MaybeEvaluated::Unchecked(WfData::new_reference(zid!(3))), Vec::new()).into_wf_data(),
             keyindex!(8, 2) => WfData::new_reference(zid!(40)),
             keyindex!(8, 3) => unv.clone(),
             keyindex!(8, 4) => WfTypedList::new(MaybeEvaluated::Unchecked(WfData::new_reference(zid!(14))), Vec::new()).into_wf_data(),
@@ -157,7 +162,7 @@ mod tests {
 
         let function = WfFunction::parse(function_unparsed.clone(), &context).unwrap();
 
-        assert_eq!(function.0.arguments, unv.clone());
+        //assert_eq!(function.0.arguments, unv.clone());
         assert_eq!(function.0.return_type.get_type_zid().unwrap(), zid!(40));
         assert_eq!(function.0.testers, unv.clone());
         //assert_eq!(function.0.implementations, unv.clone());

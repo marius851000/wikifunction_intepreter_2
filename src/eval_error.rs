@@ -22,6 +22,10 @@ pub enum EvalErrorKind {
     NotStandardType,
     #[error("Expected to find a type an identity key")]
     NoIdentity,
+    #[error(
+        "There is way, way too many argument in this function. So much it overflow the counter."
+    )]
+    TooManyArgsInFunction,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }
