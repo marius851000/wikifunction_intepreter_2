@@ -14,12 +14,22 @@ pub trait WfDataType: Debug + Clone {
 
     /// Follow references and all that -- recursively. Default to returning self.
     /// Also need to guarantee the returned data is correct and valid on the first level (but deeper data need to themselve be .evaluate-d). It shouldn’t return a WfUntyped.
+    /// It is allowed to return an error if a child is unvalid (still, not a requirement)
     fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
         Ok(self.into_wf_data())
     }
 
     fn get_reference(self, _context: &ExecutionContext) -> Result<Zid, (EvalError, Self)> {
         Err((EvalError::from_kind(EvalErrorKind::NotAReference), self))
+    }
+
+    /// Like get_key, but if the key is missing, it mark the error as having the key missing, ready to be returned if not inside another key itself (maybe once the owned WfData is added to it)
+    fn get_key_err(&self, key: KeyIndex) -> Result<WfData, EvalError> {
+        if let Some(data) = self.get_key(key) {
+            Ok(data)
+        } else {
+            Err(EvalError::missing_key(key))
+        }
     }
 }
 

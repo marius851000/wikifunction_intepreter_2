@@ -3,8 +3,8 @@ use std::{collections::BTreeMap, num::NonZeroU32};
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
     data_types::{
-        WfBoolean, WfDataType, WfInvalid, WfReference, WfString, WfUncheckedTypedList, WfUntyped,
-        types_def::WfTypeGeneric,
+        WfBoolean, WfDataType, WfFunction, WfInvalid, WfReference, WfString, WfUncheckedTypedList,
+        WfUntyped, types_def::WfTypeGeneric,
     },
 };
 
@@ -19,6 +19,7 @@ pub enum WfData {
     WfType(WfTypeGeneric),
     WfInvalid(WfInvalid),
     WfUncheckedTypedList(WfUncheckedTypedList),
+    WfFunction(WfFunction),
 }
 
 impl_wf_data_type!(
@@ -30,7 +31,8 @@ impl_wf_data_type!(
     WfUntyped(d),
     WfType(d),
     WfInvalid(d),
-    WfUncheckedTypedList(d)
+    WfUncheckedTypedList(d),
+    WfFunction(d)
 );
 
 impl WfData {
@@ -59,16 +61,25 @@ impl WfData {
         other: WfData,
         context: &ExecutionContext,
     ) -> Result<bool, (EvalError, bool)> {
-        // fast path
+        // fast path before evaluating (for reference equality and the like)
         if self == other {
             return Ok(true);
-        } else if self.is_fully_realised() && other.is_fully_realised() {
+        } else if self.is_fully_realised() && self.is_fully_realised() {
+            return Ok(false);
+        }
+
+        // evaluate
+        let first = self.evaluate(context).unwrap(); //TODO: error handling
+        let other = other.evaluate(context).unwrap(); //TODO: error handling
+
+        // fast path after evaluating
+        if first == other {
+            return Ok(true);
+        } else if first.is_fully_realised() && first.is_fully_realised() {
             return Ok(false);
         }
 
         // slow path, compare key-by-key
-        let first = self.evaluate(context).unwrap(); //TODO: error handling
-        let other = other.evaluate(context).unwrap(); //TODO: error handling
         let keys_first = first.list_keys();
         let keys_second = other.list_keys();
 

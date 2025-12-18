@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::{
     EvalError, ExecutionContext, KeyIndex, RcI, Zid,
-    data_types::{WfBoolean, WfData, WfDataType, types_def::WfTypeGeneric},
+    data_types::{WfBoolean, WfData, WfDataType, WfFunction, types_def::WfTypeGeneric},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -56,8 +56,8 @@ impl WfDataType for WfUntyped {
 
     fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
         let z1k1 = match self.entry.get(&keyindex!(1, 1)) {
-            None => return Err((EvalError::missing_key(keyindex!(1, 1)), self)),
             Some(z1k1) => z1k1.clone(),
+            _ => return Err((EvalError::missing_key(keyindex!(1, 1)), self)),
         };
         match z1k1.get_type_zid(context) {
             Ok((type_zid, _z1k1)) => {
@@ -67,7 +67,14 @@ impl WfDataType for WfUntyped {
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
                 }
-                todo!();
+
+                if type_zid == zid!(8) {
+                    match WfFunction::parse(self.into_wf_data(), context) {
+                        Ok(v) => return Ok(v.into_wf_data()),
+                        Err((e, data)) => return Err((e, WfUntyped::parse(data))),
+                    }
+                }
+                todo!("parsing for {}", type_zid);
             }
             // ignore the error. A more complete analysis will be done that will itself return an error as appropriate
             Err((_e, z1k1)) => {

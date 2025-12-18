@@ -23,4 +23,7 @@ pub use wf_invalid::WfInvalid;
 mod wf_unchecked_typed_list;
 pub use wf_unchecked_typed_list::{WfUncheckedTypedList, WfUncheckedTypedListInner};
 
+mod wf_function;
+pub use wf_function::{WfFunction, WfFunctionInner};
+
 pub mod types_def;

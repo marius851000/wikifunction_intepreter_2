@@ -7,7 +7,10 @@ This version use what I think is called... forward evaluation? Basically, it rec
 ## Implementation state:
 
 - [x] parse XML dump
+  - [ ] pre-process data such as, for example, Boolean are already stored as boolan and do not need conversion in the global context
+- [ ] correctly handle case where the identity has been dereferenced (recursive identity reference resolution)
 - [ ] running built-in function (e.g. Z844/boolean equality and Z802/if)
+  - [ ] make sure to check input/output type are correct.
 - [ ] running non-built-in function (e.g. Z10237/boolean inequality)
 - [ ] running some tests (e.g. Z10238, a test for Z10237)
 - [ ] proper handling of non-built-in type, including equality (making use of identity)
