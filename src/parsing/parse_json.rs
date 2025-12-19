@@ -111,7 +111,7 @@ mod tests {
     fn test_array() {
         assert_eq!(
             parse_array(&from_str::<Array>(r#"["Z6", "hello", "world"]"#).unwrap()).unwrap(),
-            WfData::WfUncheckedTypedList(WfTypedList::new(
+            WfData::WfTypedList(WfTypedList::new(
                 MaybeEvaluated::Unchecked(WfData::new_reference(zid!(6))),
                 vec![
                     WfString::new("hello").into_wf_data(),

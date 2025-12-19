@@ -20,7 +20,7 @@ pub enum WfData {
     WfUntyped(WfUntyped),
     WfType(WfTypeGeneric),
     WfInvalid(WfInvalid),
-    WfUncheckedTypedList(WfTypedList),
+    WfTypedList(WfTypedList),
     WfFunction(WfFunction),
     WfFunctionCall(WfFunctionCall),
     WfImplementation(WfImplementation),
@@ -35,7 +35,7 @@ impl_wf_data_type!(
     WfUntyped(d),
     WfType(d),
     WfInvalid(d),
-    WfUncheckedTypedList(d),
+    WfTypedList(d),
     WfFunction(d),
     WfFunctionCall(d),
     WfImplementation(d)

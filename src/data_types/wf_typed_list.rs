@@ -23,7 +23,7 @@ impl WfTypedList {
 
     pub fn parse(data: WfData, _context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
         match data {
-            WfData::WfUncheckedTypedList(d) => return Ok(d),
+            WfData::WfTypedList(d) => return Ok(d),
             _ => (),
         };
         todo!("parsing list from keys from {:?}", data);
@@ -32,7 +32,7 @@ impl WfTypedList {
 
 impl WfDataType for WfTypedList {
     fn into_wf_data(self) -> WfData {
-        WfData::WfUncheckedTypedList(self)
+        WfData::WfTypedList(self)
     }
 
     fn get_identity_zid_key(&self) -> Option<KeyIndex> {
