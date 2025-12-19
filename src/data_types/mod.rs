@@ -29,6 +29,9 @@ pub use wf_function::{WfFunction, WfFunctionInner};
 mod wf_function_call;
 pub use wf_function_call::WfFunctionCall;
 
+mod wf_implementation;
+pub use wf_implementation::{WfImplementation, WfImplementationInner};
+
 pub mod types_def;
 
 #[derive(Debug, PartialEq, Clone)]

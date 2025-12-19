@@ -40,6 +40,14 @@ pub trait WfDataType: Debug + Clone {
         }
     }
 
+    /// Check that the value Z1K1 (type) correspond to the type from the provided ZID
+    fn check_z1k1(&self, expected_value: Zid, context: &ExecutionContext) -> Result<(), EvalError> {
+        self.get_key_err(keyindex!(1, 1))?
+            .check_identity_zid(context, expected_value)
+            .map_err(|(e, _)| e.inside(keyindex!(1, 1)))?;
+        Ok(())
+    }
+
     /// Like get_identity_zid, but return an error if the found identity key does not match expected value, and with early return if self is a reference to the identity
     fn check_identity_zid(
         self,

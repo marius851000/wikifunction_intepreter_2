@@ -5,8 +5,8 @@ use crate::EvalErrorKind;
 use crate::{
     EvalError, ExecutionContext, KeyIndex, Zid,
     data_types::{
-        WfBoolean, WfDataType, WfFunction, WfFunctionCall, WfInvalid, WfReference, WfString,
-        WfTypedList, WfUntyped, types_def::WfTypeGeneric,
+        WfBoolean, WfDataType, WfFunction, WfFunctionCall, WfImplementation, WfInvalid,
+        WfReference, WfString, WfTypedList, WfUntyped, types_def::WfTypeGeneric,
     },
 };
 
@@ -23,6 +23,7 @@ pub enum WfData {
     WfUncheckedTypedList(WfTypedList),
     WfFunction(WfFunction),
     WfFunctionCall(WfFunctionCall),
+    WfImplementation(WfImplementation),
 }
 
 impl_wf_data_type!(
@@ -36,7 +37,8 @@ impl_wf_data_type!(
     WfInvalid(d),
     WfUncheckedTypedList(d),
     WfFunction(d),
-    WfFunctionCall(d)
+    WfFunctionCall(d),
+    WfImplementation(d)
 );
 
 impl WfData {

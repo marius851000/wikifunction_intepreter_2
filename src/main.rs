@@ -14,15 +14,16 @@ fn main() -> anyhow::Result<()> {
 
     let execution_context = ExecutionContext::default_for_global(global_context.clone());
 
+    let to_get = Zid::from_u32_panic(40);
     println!(
-        "boolean directly from entry: {:?}",
-        global_context
-            .get_object_value(&Zid::from_u32_panic(41))
-            .unwrap()
+        "{} directly from entry: {:?}",
+        to_get,
+        global_context.get_object_value(&to_get).unwrap()
     );
     println!(
-        "boolean from data: {:?}",
-        WfData::new_reference(Zid::from_u32_panic(41))
+        "{} evaluated: {:?}",
+        to_get,
+        WfData::new_reference(to_get)
             .evaluate(&execution_context)
             .unwrap()
     );
