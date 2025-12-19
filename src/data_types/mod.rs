@@ -1,4 +1,7 @@
 #[macro_use]
+mod util;
+
+#[macro_use]
 mod wf_data_type;
 pub use wf_data_type::WfDataType;
 

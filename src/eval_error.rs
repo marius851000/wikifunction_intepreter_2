@@ -26,6 +26,10 @@ pub enum EvalErrorKind {
         "There is way, way too many argument in this function. So much it overflow the counter."
     )]
     TooManyArgsInFunction,
+    #[error("A type’s type should be either Z4 or indirectly Z7")]
+    WrongTypeZidForType,
+    #[error("A Z7 type turned out to apparently not be a type disguised as function")]
+    ExpectedTypeGotFunction,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }

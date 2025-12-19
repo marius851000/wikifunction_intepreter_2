@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use crate::{
     EvalError, ExecutionContext, KeyIndex, RcI, Zid,
     data_types::{
-        WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, types_def::WfTypeGeneric,
+        WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall,
+        types_def::{WfStandardType, WfTypeGeneric},
         wf_function_call::FunctionCallOrType,
     },
 };
@@ -47,6 +48,12 @@ impl WfUntyped {
         };
         match z1k1.get_type_zid(context) {
             Ok((type_zid, _z1k1)) => {
+                if type_zid == zid!(4) {
+                    match WfStandardType::parse(self.into_wf_data(), context) {
+                        Ok(v) => return Ok(v.into_wf_data()),
+                        Err((e, data)) => return Err((e, WfUntyped::parse(data))),
+                    }
+                }
                 if type_zid == zid!(7) {
                     // function call, but may also be one of the typed type.
                     let fc_or_type = match WfFunctionCall::parse(self.into_wf_data(), context) {

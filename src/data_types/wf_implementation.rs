@@ -25,10 +25,7 @@ impl WfImplementation {
             Err(e) => return Err((e, data)),
         };
 
-        let function = match data.get_key_err(keyindex!(14, 1)) {
-            Ok(v) => v,
-            Err(e) => return Err((e, data)),
-        };
+        let function = get_value_from_data_err_handled!(data, keyindex!(14, 1));
 
         let composition = match data.get_key_err(keyindex!(14, 2)) {
             Ok(v) => v,
