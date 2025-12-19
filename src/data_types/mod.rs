@@ -35,6 +35,9 @@ pub use wf_function_call::WfFunctionCall;
 mod wf_implementation;
 pub use wf_implementation::{WfImplementation, WfImplementationInner};
 
+mod wf_argument_reference;
+pub use wf_argument_reference::WfArgumentReference;
+
 pub mod types_def;
 
 #[derive(Debug, PartialEq, Clone)]

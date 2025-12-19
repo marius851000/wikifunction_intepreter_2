@@ -1,16 +1,24 @@
 use crate::{
-    KeyIndex, RcI,
+    EvalError, ExecutionContext, KeyIndex, RcI,
     data_types::{WfData, WfDataType},
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WfString {
-    text: RcI<str>,
+    pub text: RcI<str>,
 }
 
 impl WfString {
     pub fn new(text: &str) -> Self {
         Self { text: text.into() }
+    }
+
+    pub fn parse(data: WfData, _context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
+        if let WfData::WfString(s) = data {
+            return Ok(s);
+        };
+
+        todo!();
     }
 }
 

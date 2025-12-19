@@ -7,7 +7,7 @@ use crate::{KeyIndex, KeyIndexParseError, Zid};
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum EvalErrorKind {
     #[error("Parsing zid: {0}")]
-    ParseZid(#[source] KeyIndexParseError),
+    ParseKeyIndex(#[source] KeyIndexParseError),
     #[error("Missing key: {0}")]
     MissingKey(KeyIndex),
     #[error("Expected reference")]
