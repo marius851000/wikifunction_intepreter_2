@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::{
     EvalError, ExecutionContext, KeyIndex, RcI, Zid,
     data_types::{
-        WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall,
+        WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, WfTestCase,
         types_def::{WfStandardType, WfTypeGeneric},
         wf_function_call::FunctionCallOrType,
     },
@@ -70,6 +70,11 @@ impl WfUntyped {
                     todo!("function call needs to be evaluated");
                 } else if type_zid == zid!(8) {
                     match WfFunction::parse(self.into_wf_data(), context) {
+                        Ok(v) => return Ok(v.into_wf_data()),
+                        Err((e, data)) => return Err((e, WfUntyped::parse(data))),
+                    }
+                } else if type_zid == zid!(20) {
+                    match WfTestCase::parse(self.into_wf_data(), context) {
                         Ok(v) => return Ok(v.into_wf_data()),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }

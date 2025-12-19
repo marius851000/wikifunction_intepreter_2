@@ -38,6 +38,9 @@ pub use wf_implementation::{WfImplementation, WfImplementationInner};
 mod wf_argument_reference;
 pub use wf_argument_reference::WfArgumentReference;
 
+mod wf_test_case;
+pub use wf_test_case::{WfTestCase, WfTestCaseInner};
+
 pub mod types_def;
 
 #[derive(Debug, PartialEq, Clone)]

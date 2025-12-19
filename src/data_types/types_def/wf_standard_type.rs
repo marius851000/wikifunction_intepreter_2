@@ -8,7 +8,7 @@ pub struct WfStandardTypeInner {
     pub identity_ref: Zid,
     pub keys: WfData,
     pub validator: WfData,
-    pub equality: WfData,
+    pub equality: Option<WfData>,
     pub display_function: Option<WfData>,
     pub reading_function: Option<WfData>,
     pub type_converters_to_code: Option<WfData>,
@@ -46,7 +46,7 @@ impl WfStandardType {
 
         let keys = get_value_from_data_err_handled!(data, keyindex!(4, 2));
         let validator = get_value_from_data_err_handled!(data, keyindex!(4, 3));
-        let equality = get_value_from_data_err_handled!(data, keyindex!(4, 4));
+        let equality = data.get_key(keyindex!(4, 4));
         let display_function = data.get_key(keyindex!(4, 5));
         let reading_function = data.get_key(keyindex!(4, 6));
         let type_converters_to_code = data.get_key(keyindex!(4, 7));
@@ -82,7 +82,7 @@ impl WfDataType for WfStandardType {
         } else if key == keyindex!(4, 3) {
             Some(self.inner.validator.clone())
         } else if key == keyindex!(4, 4) {
-            Some(self.inner.equality.clone())
+            self.inner.equality.clone()
         } else if key == keyindex!(4, 5) {
             self.inner.display_function.clone()
         } else if key == keyindex!(4, 6) {
@@ -102,8 +102,10 @@ impl WfDataType for WfStandardType {
             keyindex!(4, 1),
             keyindex!(4, 2),
             keyindex!(4, 3),
-            keyindex!(4, 4),
         ];
+        if self.inner.equality.is_some() {
+            result.push(keyindex!(4, 4));
+        }
         if self.inner.display_function.is_some() {
             result.push(keyindex!(4, 5));
         }
@@ -118,6 +120,7 @@ impl WfDataType for WfStandardType {
         }
         result
     }
+
     fn into_wf_data(self) -> WfData {
         WfData::WfType(WfTypeGeneric::WfStandardType(self))
     }

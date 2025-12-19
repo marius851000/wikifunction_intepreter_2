@@ -15,7 +15,7 @@ pub enum FunctionCallOrType {
 #[derive(Debug, PartialEq, Clone)]
 pub struct WfFunctionCallInner {
     function: WfFunction,
-    args: Vec<WfData>,
+    args: Vec<WfData>, // unevaluated
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -128,6 +128,14 @@ impl WfDataType for WfFunctionCall {
 
     fn is_fully_realised(&self) -> bool {
         false
+    }
+
+    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+        todo!();
+    }
+
+    fn should_be_evaluated_before_parsing(&self) -> bool {
+        true
     }
 }
 
