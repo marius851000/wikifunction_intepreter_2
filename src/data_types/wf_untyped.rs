@@ -67,7 +67,11 @@ impl WfUntyped {
                     if !recurse {
                         return Ok(function_call.into_wf_data());
                     }
-                    todo!("function call needs to be evaluated");
+
+                    match function_call.evaluate(context) {
+                        Ok(v) => return Ok(v),
+                        Err((e, data)) => return Err((e, WfUntyped::parse(data.into_wf_data()))),
+                    }
                 } else if type_zid == zid!(8) {
                     match WfFunction::parse(self.into_wf_data(), context) {
                         Ok(v) => return Ok(v.into_wf_data()),

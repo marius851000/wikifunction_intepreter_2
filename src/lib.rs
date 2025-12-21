@@ -23,6 +23,8 @@ pub mod parsing;
 mod global_context;
 pub use global_context::GlobalContext;
 
+pub mod functions;
+
 #[cfg(test)]
 mod bench;
 

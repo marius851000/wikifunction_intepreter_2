@@ -16,6 +16,7 @@ pub trait WfDataType: Debug + Clone {
     /// Follow references and all that -- recursively. Default to returning self.
     /// Also need to guarantee the returned data is correct and valid on the first level (but deeper data need to themselve be .evaluate-d). It shouldn’t return a WfUntyped.
     /// It is allowed to return an error if a child is unvalid (still, not a requirement)
+    //TODO: should it really return Self on error? not WfData
     fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
         Ok(self.into_wf_data())
     }

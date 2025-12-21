@@ -1,18 +1,33 @@
 use crate::{
-    EvalError, ExecutionContext, KeyIndex, RcI,
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex, RcI,
     data_types::{WfData, WfDataType},
 };
-
 #[derive(Debug, Clone, PartialEq)]
-pub struct WfImplementationInner {
-    function: WfData,
-    composition: WfData,
-    code: WfData,
-    builtin: WfData,
+pub enum ImplementationByKind {
+    Composition(WfData),
+    Code(WfData),
+    Builtin(WfData),
+}
+
+impl ImplementationByKind {
+    pub fn get_key_index(&self) -> KeyIndex {
+        match self {
+            ImplementationByKind::Composition(_) => keyindex!(14, 2),
+            ImplementationByKind::Code(_) => keyindex!(14, 3),
+            ImplementationByKind::Builtin(_) => keyindex!(14, 4),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct WfImplementation(RcI<WfImplementationInner>);
+pub struct WfImplementationInner {
+    pub function: WfData,
+    // assume one implementation by Z14
+    pub r#impl: ImplementationByKind,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WfImplementation(pub RcI<WfImplementationInner>);
 
 impl WfImplementation {
     pub fn parse(data: WfData, context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
@@ -27,27 +42,34 @@ impl WfImplementation {
 
         let function = get_value_from_data_err_handled!(data, keyindex!(14, 1));
 
-        let composition = match data.get_key_err(keyindex!(14, 2)) {
-            Ok(v) => v,
-            Err(e) => return Err((e, data)),
+        let composition = data.get_key(keyindex!(14, 2));
+        let code = data.get_key(keyindex!(14, 3));
+        let builtin = data.get_key(keyindex!(14, 4));
+        if ((if composition.is_some() { 1 } else { 0 })
+            + (if code.is_some() { 1 } else { 0 })
+            + (if builtin.is_some() { 1 } else { 0 }))
+            >= 2
+        {
+            return Err((
+                EvalError::from_kind(EvalErrorKind::ExpectOnlyOneImplementation),
+                data,
+            ));
+        }
+
+        let r#impl = if let Some(composition) = composition {
+            ImplementationByKind::Composition(composition)
+        } else if let Some(code) = code {
+            ImplementationByKind::Code(code)
+        } else if let Some(builtin) = builtin {
+            ImplementationByKind::Builtin(builtin)
+        } else {
+            return Err((
+                EvalError::from_kind(EvalErrorKind::ExpectOneImplementionFoundZero),
+                data,
+            ));
         };
 
-        let code = match data.get_key_err(keyindex!(14, 3)) {
-            Ok(v) => v,
-            Err(e) => return Err((e, data)),
-        };
-
-        let builtin = match data.get_key_err(keyindex!(14, 4)) {
-            Ok(v) => v,
-            Err(e) => return Err((e, data)),
-        };
-
-        Ok(Self(RcI::new(WfImplementationInner {
-            function,
-            composition,
-            code,
-            builtin,
-        })))
+        Ok(Self(RcI::new(WfImplementationInner { function, r#impl })))
     }
 }
 
@@ -62,11 +84,23 @@ impl WfDataType for WfImplementation {
         } else if key == keyindex!(14, 1) {
             Some(self.0.function.clone())
         } else if key == keyindex!(14, 2) {
-            Some(self.0.composition.clone())
+            if let ImplementationByKind::Composition(x) = &self.0.r#impl {
+                Some(x.clone())
+            } else {
+                None
+            }
         } else if key == keyindex!(14, 3) {
-            Some(self.0.code.clone())
+            if let ImplementationByKind::Code(x) = &self.0.r#impl {
+                Some(x.clone())
+            } else {
+                None
+            }
         } else if key == keyindex!(14, 4) {
-            Some(self.0.builtin.clone())
+            if let ImplementationByKind::Builtin(x) = &self.0.r#impl {
+                Some(x.clone())
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -76,9 +110,7 @@ impl WfDataType for WfImplementation {
         vec![
             keyindex!(1, 1),
             keyindex!(14, 1),
-            keyindex!(14, 2),
-            keyindex!(14, 3),
-            keyindex!(14, 4),
+            self.0.r#impl.get_key_index(),
         ]
     }
 

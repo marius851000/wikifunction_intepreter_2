@@ -5,7 +5,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WfBoolean {
-    value: bool,
+    pub value: bool,
 }
 
 impl WfBoolean {

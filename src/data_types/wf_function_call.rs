@@ -1,9 +1,10 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, RcI,
     data_types::{
-        WfData, WfDataType, WfFunction,
+        ImplementationByKind, WfData, WfDataType, WfFunction,
         types_def::{WfTypeGeneric, WfTypedListType},
     },
+    functions::dispatch_builtins,
 };
 
 #[derive(Debug)]
@@ -14,12 +15,12 @@ pub enum FunctionCallOrType {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct WfFunctionCallInner {
-    function: WfFunction,
-    args: Vec<WfData>, // unevaluated
+    pub function: WfFunction,
+    pub args: Vec<WfData>, // unevaluated
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct WfFunctionCall(RcI<WfFunctionCallInner>);
+pub struct WfFunctionCall(pub RcI<WfFunctionCallInner>);
 
 #[allow(unused_assignments)] //TODO: remove once parse is fully implemented
 impl WfFunctionCall {
@@ -93,7 +94,7 @@ impl WfFunctionCall {
         };
 
         let mut args = Vec::new();
-        //TODO: I’m not sure this is correct. I think keys also might be listed as K1, K2, etc...
+        //TODO: I’m not sure this is correct. I think keys also might be listed as K1, K2, etc... If that is changed, remember to change get_key and list_key
         for i in 1..num_argument_plus_one_as_u32 {
             let key = KeyIndex::from_u32s_panic(Some(function_identity.0.into()), Some(i)); // should not panic, z is already a valid Zid and i is always strictly greater than 0
             let parameter = match data.get_key_err(key) {
@@ -110,12 +111,35 @@ impl WfFunctionCall {
 }
 
 impl WfDataType for WfFunctionCall {
-    fn list_keys(&self) -> Vec<KeyIndex> {
-        todo!();
+    fn get_key(&self, key: KeyIndex) -> Option<WfData> {
+        if key == keyindex!(1, 1) {
+            Some(WfData::new_reference(zid!(7)))
+        } else if key == keyindex!(7, 1) {
+            Some(self.0.function.clone().into_wf_data())
+        } else {
+            for (pos, value) in self.0.args.iter().enumerate() {
+                if key
+                    == KeyIndex::from_u32s_panic(
+                        Some(self.0.function.0.identity.0.get()),
+                        Some(pos as u32 + 1),
+                    )
+                {
+                    return Some(value.clone());
+                }
+            }
+            return None;
+        }
     }
 
-    fn get_key(&self, _key: KeyIndex) -> Option<WfData> {
-        todo!();
+    fn list_keys(&self) -> Vec<KeyIndex> {
+        let mut result = vec![keyindex!(1, 1), keyindex!(7, 1)];
+        for pos in 0..self.0.args.len() {
+            result.push(KeyIndex::from_u32s_panic(
+                Some(self.0.function.0.identity.0.get()),
+                Some(pos as u32 + 1),
+            ))
+        }
+        result
     }
 
     fn get_identity_zid_key(&self) -> Option<KeyIndex> {
@@ -130,8 +154,27 @@ impl WfDataType for WfFunctionCall {
         false
     }
 
-    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
-        todo!();
+    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+        let implementation = match self
+            .0
+            .function
+            .get_preffered_implementation(context)
+            .map_err(|e| e.inside(keyindex!(7, 1)))
+        {
+            Ok(i) => i,
+            Err(e) => return Err((e, self)),
+        };
+
+        match implementation.0.r#impl {
+            ImplementationByKind::Composition(_) => todo!("implementation composition"),
+            ImplementationByKind::Code(_) => todo!("code composition"),
+            ImplementationByKind::Builtin(_) => {
+                match dispatch_builtins(self.0.function.0.identity, &self, context) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err((e, self)),
+                }
+            }
+        }
     }
 
     fn should_be_evaluated_before_parsing(&self) -> bool {
@@ -141,28 +184,33 @@ impl WfDataType for WfFunctionCall {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use map_macro::btree_map;
 
     use crate::{
-        ExecutionContext, GlobalContext, RcI,
+        ExecutionContext, GlobalContext, KeyIndex, RcI,
         data_types::{
             WfBoolean, WfData, WfDataType, WfFunctionCall, wf_function_call::FunctionCallOrType,
         },
     };
+
+    fn get_unparsed_boolean_equality_true_false() -> BTreeMap<KeyIndex, WfData> {
+        btree_map! {
+            keyindex!(1, 1) => WfData::new_reference(zid!(7)),
+            keyindex!(7, 1) => WfData::new_reference(zid!(844)),
+            // boolean equality function
+            keyindex!(844, 1) => WfBoolean::new(false).into_wf_data(),
+            keyindex!(844, 2) => WfBoolean::new(true).into_wf_data(),
+        }
+    }
 
     #[test]
     fn test_parse_function_call() {
         let global_context = GlobalContext::default_for_test();
         let context = ExecutionContext::default_for_global(RcI::new(global_context));
 
-        let unparsed_tree = btree_map! {
-            keyindex!(1, 1) => WfData::new_reference(zid!(7)),
-            keyindex!(7, 1) => WfData::new_reference(zid!(844)),
-            // boolean equality function
-            keyindex!(844, 1) => WfBoolean::new(false).into_wf_data(),
-            keyindex!(844, 2) => WfBoolean::new(true).into_wf_data(),
-        };
-
+        let unparsed_tree = get_unparsed_boolean_equality_true_false();
         let unparsed = WfData::from_map(unparsed_tree.clone());
 
         let parsed = WfFunctionCall::parse(unparsed.clone(), &context).unwrap();
@@ -197,5 +245,16 @@ mod tests {
         WfData::from_map(invalid_unparsed)
             .evaluate(&context)
             .unwrap_err();
+    }
+
+    #[test]
+    fn test_evaluate_builtin_function() {
+        let global_context = GlobalContext::default_for_test();
+        let context = ExecutionContext::default_for_global(RcI::new(global_context));
+
+        let unparsed_tree = get_unparsed_boolean_equality_true_false();
+        let unparsed = WfData::from_map(unparsed_tree.clone());
+        let evaluated = unparsed.evaluate(&context).unwrap();
+        assert_eq!(evaluated, WfBoolean::new(false).into_wf_data());
     }
 }

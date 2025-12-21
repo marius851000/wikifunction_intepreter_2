@@ -30,6 +30,14 @@ pub enum EvalErrorKind {
     WrongTypeZidForType,
     #[error("A Z7 type turned out to apparently not be a type disguised as function")]
     ExpectedTypeGotFunction,
+    #[error("A Z14 implementation expect only one kind of implementation")]
+    ExpectOnlyOneImplementation,
+    #[error("A Z14 should contain one implementation, but none were found")]
+    ExpectOneImplementionFoundZero,
+    #[error("No implementation for this function")]
+    NoImplementationForFunction,
+    #[error("{0} arguments provided, expected {1}")]
+    TooManyArguments(usize, usize),
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }
@@ -38,6 +46,7 @@ pub enum EvalErrorKind {
 #[allow(dead_code)] //TODO:
 pub enum TraceEntry {
     Inside(KeyIndex),
+    InsideList(usize), // position is starting from 0 for the first element of the list (which exclude the argument paramater)
     InsideReference(Zid),
     Text(String),
 }
@@ -67,6 +76,11 @@ impl EvalError {
 
     pub fn inside(mut self, key: KeyIndex) -> Self {
         self.trace.push(TraceEntry::Inside(key));
+        self
+    }
+
+    pub fn inside_list(mut self, pos: usize) -> Self {
+        self.trace.push(TraceEntry::InsideList(pos));
         self
     }
 

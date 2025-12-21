@@ -60,7 +60,8 @@ impl GlobalContext {
         use crate::{
             RcI,
             data_types::{
-                MaybeEvaluated, WfBoolean, WfDataType, WfFunction, WfFunctionInner, WfTypedList,
+                ImplementationByKind, MaybeEvaluated, WfBoolean, WfDataType, WfFunction,
+                WfFunctionInner, WfImplementation, WfImplementationInner, WfTypedList,
                 types_def::{WfStandardType, WfStandardTypeInner, WfTypeGeneric},
             },
         };
@@ -104,9 +105,14 @@ impl GlobalContext {
                 zid!(844) => WfFunction(RcI::new(WfFunctionInner {
                     arguments: WfTypedList::new(MaybeEvaluated::Unchecked(WfData::new_reference(zid!(3))), vec![WfData::unvalid(EvalErrorKind::TestData); 2]),
                     identity: zid!(844),
-                    implementations: WfTypedList::new(MaybeEvaluated::Unchecked(WfData::new_reference(zid!(14))), Vec::new()),
+                    implementations: WfTypedList::new(MaybeEvaluated::Unchecked(WfData::new_reference(zid!(14))), vec![WfData::new_reference(zid!(944))]),
                     return_type: WfTypeGeneric::WfStandardType(boolean_type),
                     testers: WfData::unvalid(EvalErrorKind::TestData)
+                })).into_wf_data(),
+                // builtin boolean equality
+                zid!(944) => WfImplementation(RcI::new(WfImplementationInner {
+                    function: WfData::new_reference(zid!(844)),
+                    r#impl: ImplementationByKind::Builtin(WfData::new_reference(zid!(844)))
                 })).into_wf_data()
             },
         }

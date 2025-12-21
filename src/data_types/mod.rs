@@ -33,7 +33,7 @@ mod wf_function_call;
 pub use wf_function_call::WfFunctionCall;
 
 mod wf_implementation;
-pub use wf_implementation::{WfImplementation, WfImplementationInner};
+pub use wf_implementation::{ImplementationByKind, WfImplementation, WfImplementationInner};
 
 mod wf_argument_reference;
 pub use wf_argument_reference::WfArgumentReference;

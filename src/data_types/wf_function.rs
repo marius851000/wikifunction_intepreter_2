@@ -1,6 +1,9 @@
 use crate::{
-    EvalError, ExecutionContext, KeyIndex, RcI, Zid,
-    data_types::{WfData, WfDataType, WfTypedList, types_def::WfTypeGeneric},
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex, RcI, Zid,
+    data_types::{
+        ImplementationByKind, WfData, WfDataType, WfImplementation, WfTypedList,
+        types_def::WfTypeGeneric,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -59,6 +62,7 @@ impl WfFunction {
             Ok(v) => v,
         };
 
+        //TODO: verify type of this list to match expected value
         let implementations = match data.get_key_err(keyindex!(8, 4)) {
             Err(e) => return Err((e, data)),
             Ok(v) => match v.evaluate(context) {
@@ -82,6 +86,55 @@ impl WfFunction {
             implementations,
             identity,
         })))
+    }
+
+    pub fn get_preffered_implementation(
+        &self,
+        context: &ExecutionContext,
+    ) -> Result<WfImplementation, EvalError> {
+        let mut implementations = Vec::new();
+        for (pos, implementation) in self.0.implementations.entries.iter().enumerate() {
+            let implementation = match implementation.clone().evaluate(context) {
+                Ok(v) => v,
+                Err((e, _)) => return Err(e.inside(keyindex!(8, 4)).inside_list(pos)),
+            };
+
+            let implementation = match WfImplementation::parse(implementation, context) {
+                Ok(i) => i,
+                Err((e, _)) => return Err(e.inside(keyindex!(8, 4)).inside_list(pos)),
+            };
+
+            implementations.push(implementation);
+        }
+
+        let mut best_builtin_implementation = None;
+        let mut best_composition_implementation = None;
+        let mut best_code_implementation = None;
+
+        for implementation in implementations.into_iter() {
+            //TODO: better implementation choice
+            match implementation.0.r#impl {
+                ImplementationByKind::Composition(_) => {
+                    best_composition_implementation = Some(implementation)
+                }
+                ImplementationByKind::Code(_) => best_code_implementation = Some(implementation),
+                ImplementationByKind::Builtin(_) => {
+                    best_builtin_implementation = Some(implementation)
+                }
+            }
+        }
+
+        if let Some(r#impl) = best_builtin_implementation {
+            Ok(r#impl)
+        } else if let Some(r#impl) = best_composition_implementation {
+            Ok(r#impl)
+        } else if let Some(r#impl) = best_code_implementation {
+            Ok(r#impl)
+        } else {
+            Err(EvalError::from_kind(
+                EvalErrorKind::NoImplementationForFunction,
+            ))
+        }
     }
 }
 
