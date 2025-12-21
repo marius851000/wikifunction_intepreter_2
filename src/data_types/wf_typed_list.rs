@@ -85,4 +85,12 @@ impl WfDataType for WfTypedList {
             Ok(self.into_wf_data())
         }
     }
+
+    fn substitute_function_arguments<I: super::util::SubstitutionInfo>(
+        self,
+        _info: &I,
+        _context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        todo!("argument substitution for list")
+    }
 }

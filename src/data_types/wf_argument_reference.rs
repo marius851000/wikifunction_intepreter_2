@@ -74,6 +74,22 @@ impl WfDataType for WfArgumentReference {
     fn should_be_evaluated_before_parsing(&self) -> bool {
         true
     }
+
+    fn substitute_function_arguments<I: super::util::SubstitutionInfo>(
+        self,
+        info: &I,
+        _context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        let k_part = if let Some(v) = self.key_id.get_k() {
+            v
+        } else {
+            return Err(EvalError::from_kind(
+                EvalErrorKind::ArgumentReferenceNoKPart(self.key_id),
+            ));
+        };
+        let index = k_part.get() - 1;
+        info.get_for_pos(index)
+    }
 }
 
 #[cfg(test)]

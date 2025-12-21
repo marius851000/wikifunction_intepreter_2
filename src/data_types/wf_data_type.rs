@@ -1,6 +1,9 @@
 use std::fmt::Debug;
 
-use crate::{EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid, data_types::WfData};
+use crate::{
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
+    data_types::{WfData, util::SubstitutionInfo},
+};
 
 pub trait WfDataType: Debug + Clone {
     fn into_wf_data(self) -> WfData;
@@ -12,6 +15,13 @@ pub trait WfDataType: Debug + Clone {
     fn get_key(&self, key: KeyIndex) -> Option<WfData>;
     /// does not evaluate
     fn list_keys(&self) -> Vec<KeyIndex>; //TODO: some iterator?
+
+    /// Used to perform argument reference substitution recursively. Should not traverse implementations and references, but should traverse among other function call’s argument (but not evaluate it nor traverse thought the function it reference)
+    fn substitute_function_arguments<I: SubstitutionInfo>(
+        self,
+        info: &I,
+        context: &ExecutionContext,
+    ) -> Result<WfData, EvalError>;
 
     /// Follow references and all that -- recursively. Default to returning self.
     /// Also need to guarantee the returned data is correct and valid on the first level (but deeper data need to themselve be .evaluate-d). It shouldn’t return a WfUntyped.
@@ -193,6 +203,13 @@ macro_rules! impl_wf_data_type {
                 }
             }
 
+            fn substitute_function_arguments<I: $crate::data_types::util::SubstitutionInfo>(self, info: &I, context: &$crate::ExecutionContext) -> Result<$crate::data_types::WfData, $crate::EvalError> {
+                match self {
+                    $(Self::$variant($inner) =>
+                        $inner.substitute_function_arguments(info, context),)+
+                }
+            }
+
             fn evaluate(self, context: &$crate::ExecutionContext) -> Result<$crate::data_types::WfData, ($crate::EvalError, Self)> {
                 match self {
                     $(Self::$variant($inner) =>
@@ -204,6 +221,14 @@ macro_rules! impl_wf_data_type {
                 match self {
                     $(Self::$variant($inner) =>
                         $inner.get_reference(context).map(|(z, p)| (z, p)).map_err(|(e, p)| (e, p)),)+
+                }
+            }
+
+            //TODO: also propagate all the other functions with default implementation (get_key_err, check_z1k1, check_identity_zid, get_identity_zid, assert_evaluated)
+
+            fn should_be_evaluated_before_parsing(&self) -> bool {
+                match self {
+                    $(Self::$variant($inner) => $inner.is_fully_realised(),)+
                 }
             }
         }

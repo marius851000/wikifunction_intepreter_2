@@ -57,4 +57,12 @@ impl WfDataType for WfReference {
     ) -> Result<(Zid, WfData), (EvalError, WfData)> {
         Ok((self.to, self.into_wf_data()))
     }
+
+    fn substitute_function_arguments<I: super::util::SubstitutionInfo>(
+        self,
+        _info: &I,
+        _context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        Ok(self.into_wf_data())
+    }
 }

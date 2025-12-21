@@ -1,5 +1,5 @@
 #[macro_use]
-mod util;
+pub mod util;
 
 #[macro_use]
 mod wf_data_type;

@@ -1,4 +1,4 @@
-use crate::data_types::WfData;
+use crate::{EvalError, data_types::WfData};
 
 #[macro_export]
 macro_rules! get_value_from_data_err_handled {
@@ -10,6 +10,7 @@ macro_rules! get_value_from_data_err_handled {
     };
 }
 
-pub struct SubstitutionInfo<'l> {
-    pub to_substitute: &'l Vec<WfData>,
+pub trait SubstitutionInfo {
+    /// using 0-indexing
+    fn get_for_pos(&self, pos: u32) -> Result<WfData, EvalError>;
 }

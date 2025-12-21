@@ -14,7 +14,7 @@ fn main() -> anyhow::Result<()> {
 
     let execution_context = ExecutionContext::default_for_global(global_context.clone());
 
-    let to_get = Zid::from_u32_panic(15933);
+    let to_get = Zid::from_u32_panic(10238);
     println!(
         "{} directly from entry: {:?}",
         to_get,

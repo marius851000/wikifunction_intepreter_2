@@ -38,6 +38,10 @@ pub enum EvalErrorKind {
     NoImplementationForFunction,
     #[error("{0} arguments provided, expected {1}")]
     TooManyArguments(usize, usize),
+    #[error("Argument reference reference {0}, which does not have the needed K part")]
+    ArgumentReferenceNoKPart(KeyIndex),
+    #[error("No argument found at 0-indexed position {0}")]
+    ArgumentReferenceTooLarge(u32),
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }

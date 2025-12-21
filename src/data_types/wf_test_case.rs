@@ -1,6 +1,6 @@
 use crate::{
     EvalError, ExecutionContext, KeyIndex, RcI,
-    data_types::{WfData, WfDataType, WfFunction},
+    data_types::{WfData, WfDataType, WfFunction, util::SubstitutionInfo},
 };
 
 #[derive(Clone, PartialEq, Debug)]
@@ -80,5 +80,42 @@ impl WfDataType for WfTestCase {
 
     fn into_wf_data(self) -> WfData {
         WfData::WfTestCase(self)
+    }
+
+    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+        todo!();
+    }
+
+    fn substitute_function_arguments<I: SubstitutionInfo>(
+        self,
+        info: &I,
+        context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        Ok(Self(RcI::new(WfTestCaseInner {
+            function: match WfFunction::parse(
+                self.0
+                    .function
+                    .clone()
+                    .substitute_function_arguments(info, context)
+                    .map_err(|e| e.inside(keyindex!(20, 1)))?,
+                context,
+            ) {
+                Ok(v) => v,
+                Err((e, _)) => return Err(e.inside(keyindex!(20, 2))),
+            },
+            call: self
+                .0
+                .call
+                .clone()
+                .substitute_function_arguments(info, context)
+                .map_err(|e| e.inside(keyindex!(20, 2)))?,
+            validation: self
+                .0
+                .validation
+                .clone()
+                .substitute_function_arguments(info, context)
+                .map_err(|e| e.inside(keyindex!(20, 3)))?,
+        }))
+        .into_wf_data())
     }
 }

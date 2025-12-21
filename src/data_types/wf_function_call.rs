@@ -3,6 +3,7 @@ use crate::{
     data_types::{
         ImplementationByKind, WfData, WfDataType, WfFunction,
         types_def::{WfTypeGeneric, WfTypedListType},
+        util::SubstitutionInfo,
     },
     functions::dispatch_builtins,
 };
@@ -165,8 +166,19 @@ impl WfDataType for WfFunctionCall {
             Err(e) => return Err((e, self)),
         };
 
-        match implementation.0.r#impl {
-            ImplementationByKind::Composition(_) => todo!("implementation composition"),
+        match &implementation.0.r#impl {
+            ImplementationByKind::Composition(inner) => {
+                let inner_substituted =
+                    match inner.clone().substitute_function_arguments(&self, context) {
+                        Ok(v) => v,
+                        Err(e) => return Err((e, self)),
+                    };
+                let inner = match inner_substituted.evaluate(context) {
+                    Ok(v) => v,
+                    Err((e, _)) => return Err((e, self)),
+                };
+                Ok(inner)
+            }
             ImplementationByKind::Code(_) => todo!("code composition"),
             ImplementationByKind::Builtin(_) => {
                 match dispatch_builtins(self.0.function.0.identity, &self, context) {
@@ -179,6 +191,37 @@ impl WfDataType for WfFunctionCall {
 
     fn should_be_evaluated_before_parsing(&self) -> bool {
         true
+    }
+
+    fn substitute_function_arguments<I: super::util::SubstitutionInfo>(
+        self,
+        info: &I,
+        context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        let mut new_args = Vec::with_capacity(self.0.args.len());
+        for arg in self.0.args.iter() {
+            let arg = arg
+                .clone()
+                .substitute_function_arguments(info, context)
+                .map_err(|e| e.inside(todo!()))?;
+            new_args.push(arg);
+        }
+        Ok(Self(RcI::new(WfFunctionCallInner {
+            function: self.0.function.clone(),
+            args: new_args,
+        }))
+        .into_wf_data())
+    }
+}
+
+impl SubstitutionInfo for WfFunctionCall {
+    fn get_for_pos(&self, pos: u32) -> Result<WfData, EvalError> {
+        match self.0.args.get(pos as usize) {
+            Some(v) => Ok(v.clone()),
+            _ => Err(EvalError::from_kind(
+                EvalErrorKind::ArgumentReferenceTooLarge(pos),
+            )),
+        }
     }
 }
 

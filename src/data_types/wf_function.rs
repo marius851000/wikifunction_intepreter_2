@@ -2,7 +2,7 @@ use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, RcI, Zid,
     data_types::{
         ImplementationByKind, WfData, WfDataType, WfImplementation, WfTypedList,
-        types_def::WfTypeGeneric,
+        types_def::WfTypeGeneric, util::SubstitutionInfo,
     },
 };
 
@@ -181,6 +181,14 @@ impl WfDataType for WfFunction {
             keyindex!(8, 4),
             keyindex!(8, 5),
         ]
+    }
+
+    fn substitute_function_arguments<I: SubstitutionInfo>(
+        self,
+        _info: &I,
+        _context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        todo!(); // given the identity relation, this should not normally be called on a function. return Self or still propagate thought implementations, arguments, return type and testers?
     }
 }
 

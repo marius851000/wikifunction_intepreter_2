@@ -144,4 +144,20 @@ impl WfDataType for WfUntyped {
             Ok(this) => Ok(this.get_reference(context)?),
         }
     }
+    fn substitute_function_arguments<I: super::util::SubstitutionInfo>(
+        self,
+        info: &I,
+        context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        let mut new_entries = BTreeMap::new();
+        for (k, v) in self.entry.iter() {
+            new_entries.insert(
+                k.clone(),
+                v.clone()
+                    .substitute_function_arguments(info, context)
+                    .map_err(|e| e.inside(k.clone()))?,
+            );
+        }
+        Ok(Self::new(new_entries).into_wf_data())
+    }
 }

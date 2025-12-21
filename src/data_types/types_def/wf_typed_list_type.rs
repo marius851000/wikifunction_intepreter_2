@@ -87,6 +87,26 @@ impl WfDataType for WfTypedListType {
     fn list_keys(&self) -> Vec<KeyIndex> {
         vec![keyindex!(1, 1), keyindex!(7, 1), keyindex!(881, 1)]
     }
+
+    fn substitute_function_arguments<I: crate::data_types::util::SubstitutionInfo>(
+        self,
+        info: &I,
+        context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        Ok(Self::new(
+            match WfTypeGeneric::parse(
+                (&*self.r#type)
+                    .clone()
+                    .substitute_function_arguments(info, context)
+                    .map_err(|e| e.inside(keyindex!(881, 1)))?,
+                context,
+            ) {
+                Ok(v) => v,
+                Err((e, _)) => return Err(e.inside(keyindex!(881, 1))),
+            },
+        )
+        .into_wf_data())
+    }
 }
 
 #[cfg(test)]

@@ -128,4 +128,84 @@ impl WfDataType for WfStandardType {
     fn is_fully_realised(&self) -> bool {
         true
     }
+
+    fn substitute_function_arguments<I: crate::data_types::util::SubstitutionInfo>(
+        self,
+        info: &I,
+        context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        let keys = self
+            .inner
+            .keys
+            .clone()
+            .substitute_function_arguments(info, context)
+            .map_err(|e| e.inside(keyindex!(4, 2)))?;
+        let validator = self
+            .inner
+            .validator
+            .clone()
+            .substitute_function_arguments(info, context)
+            .map_err(|e| e.inside(keyindex!(4, 3)))?;
+        let equality = if let Some(equality) = self.inner.equality.clone() {
+            Some(
+                equality
+                    .substitute_function_arguments(info, context)
+                    .map_err(|e| e.inside(keyindex!(4, 4)))?,
+            )
+        } else {
+            None
+        };
+        let display_function = if let Some(display_function) = self.inner.display_function.clone() {
+            Some(
+                display_function
+                    .substitute_function_arguments(info, context)
+                    .map_err(|e| e.inside(keyindex!(4, 5)))?,
+            )
+        } else {
+            None
+        };
+        let reading_function = if let Some(reading_function) = self.inner.reading_function.clone() {
+            Some(
+                reading_function
+                    .substitute_function_arguments(info, context)
+                    .map_err(|e| e.inside(keyindex!(4, 6)))?,
+            )
+        } else {
+            None
+        };
+        let type_converters_to_code =
+            if let Some(type_converters_to_code) = self.inner.type_converters_to_code.clone() {
+                Some(
+                    type_converters_to_code
+                        .substitute_function_arguments(info, context)
+                        .map_err(|e| e.inside(keyindex!(4, 7)))?,
+                )
+            } else {
+                None
+            };
+        let type_converters_from_code =
+            if let Some(type_converters_from_code) = self.inner.type_converters_from_code.clone() {
+                Some(
+                    type_converters_from_code
+                        .substitute_function_arguments(info, context)
+                        .map_err(|e| e.inside(keyindex!(4, 8)))?,
+                )
+            } else {
+                None
+            };
+
+        Ok((Self {
+            inner: RcI::new(WfStandardTypeInner {
+                identity_ref: self.inner.identity_ref,
+                keys,
+                validator,
+                equality,
+                display_function,
+                reading_function,
+                type_converters_to_code,
+                type_converters_from_code,
+            }),
+        })
+        .into_wf_data())
+    }
 }

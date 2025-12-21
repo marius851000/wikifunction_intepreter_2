@@ -121,4 +121,12 @@ impl WfDataType for WfImplementation {
     fn into_wf_data(self) -> WfData {
         WfData::WfImplementation(self)
     }
+
+    fn substitute_function_arguments<I: super::util::SubstitutionInfo>(
+        self,
+        _info: &I,
+        _context: &ExecutionContext,
+    ) -> Result<WfData, EvalError> {
+        Ok(self.into_wf_data())
+    }
 }
