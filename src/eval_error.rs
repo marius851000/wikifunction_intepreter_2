@@ -53,6 +53,8 @@ pub enum EvalErrorKind {
     TestCaseFailedWithFalse(Box<WfData>),
     #[error("Can’t get head of an empty list")]
     CantGetHeadOfEmptyList,
+    #[error("type does not match")]
+    TypeDoesNotMatch,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }

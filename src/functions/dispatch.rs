@@ -38,7 +38,7 @@ pub fn dispatch_builtins(
             assert_args_count(1, &args_evaluated)?;
             let list1 =
                 WfTypedList::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
-            return list::first_element(list1);
+            return list::first_element(list1, context);
         }
         844 => {
             assert_args_count(2, &args_evaluated)?;

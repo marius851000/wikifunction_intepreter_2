@@ -77,12 +77,14 @@ impl WfTypedList {
 
     /// First WfData of result is head, second element (Self) is tail.
     /// return an error if the list is empty. May still return an empty list as tail if just one element is present.
-    /// check the type of the head, which requires it being evaluated.
+    /// check the type of the head, which requires it being evaluated (will only be evaluated if check_type is true)
+    /// As such, the context will also only be used if check_type is true
     pub fn split_first_element(
         mut self,
         check_type: bool,
+        context: &ExecutionContext,
     ) -> Result<(WfData, Self), (EvalError, Self)> {
-        let head_unchecked = if let Some(e) = self.inner.entries.get(self.start_position) {
+        let mut head = if let Some(e) = self.inner.entries.get(self.start_position) {
             e.clone()
         } else {
             return Err((
@@ -92,13 +94,26 @@ impl WfTypedList {
         };
 
         if check_type {
-            //TODO: check type, before mutaton this TypedList is done
+            head = match head.evaluate(context) {
+                Ok(v) => v,
+                Err((e, _)) => return Err((e, self)),
+            };
+            match head.check_type_compatibility(
+                match (&*self.inner_type).clone() {
+                    MaybeEvaluated::Valid(v) => v.clone(),
+                    MaybeEvaluated::Unchecked(_) => todo!(), // I think this should be unreacheable. Should it?
+                },
+                context,
+            ) {
+                Ok(()) => (),
+                Err(e) => return Err((e, self)),
+            };
         }
 
         self.start_position += 1;
         self.switch_to_next_entry_group_as_needed();
 
-        Ok((head_unchecked, self))
+        Ok((head, self))
     }
 
     /// Does not check type validity

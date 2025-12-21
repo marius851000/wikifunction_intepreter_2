@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
-    data_types::{WfData, util::SubstitutionInfo},
+    data_types::{WfData, types_def::WfTypeGeneric, util::SubstitutionInfo},
 };
 
 pub trait WfDataType: Debug + Clone {
@@ -142,6 +142,34 @@ pub trait WfDataType: Debug + Clone {
             panic!("internal error: should have been evaluated: {:?}", self)
         }
     }
+
+    fn check_type_compatibility(
+        &self,
+        r#type: WfTypeGeneric,
+        context: &ExecutionContext,
+    ) -> Result<(), EvalError> {
+        if let WfTypeGeneric::WfStandardType(standard) = &r#type
+            && standard.inner.identity_ref == zid!(1)
+        {
+            return Ok(());
+        }
+        let this_type = match self.get_key_err(keyindex!(1, 1))?.evaluate(context) {
+            Err((e, _)) => return Err(e),
+            Ok(v) => match WfTypeGeneric::parse(v, context) {
+                Err((e, _)) => return Err(e),
+                Ok(v) => v,
+            },
+        };
+        let to_compare_with = r#type.evaluate(context).map_err(|(e, _)| e)?;
+        match this_type
+            .into_wf_data()
+            .equality(to_compare_with.into_wf_data(), context)
+        {
+            Ok(true) => Ok(()),
+            Ok(false) => Err(EvalError::from_kind(EvalErrorKind::TypeDoesNotMatch)),
+            Err((e, _)) => Err(e),
+        }
+    }
 }
 
 /// Macro that generates the `WfDataType` implementation for a generic enum.
@@ -229,6 +257,12 @@ macro_rules! impl_wf_data_type {
             fn should_be_evaluated_before_parsing(&self) -> bool {
                 match self {
                     $(Self::$variant($inner) => $inner.is_fully_realised(),)+
+                }
+            }
+
+            fn check_type_compatibility(&self, r#type: $crate::data_types::types_def::WfTypeGeneric, context: &$crate::ExecutionContext) -> Result<(), $crate::EvalError> {
+                match self {
+                    $(Self::$variant($inner) => $inner.check_type_compatibility(r#type, context),)+
                 }
             }
         }
