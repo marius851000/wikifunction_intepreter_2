@@ -1,7 +1,7 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, Zid,
-    data_types::{WfBoolean, WfData, WfDataType, WfFunctionCall, WfString},
-    functions::{boolean, logic, string},
+    data_types::{WfBoolean, WfData, WfDataType, WfFunctionCall, WfString, WfTypedList},
+    functions::{boolean, list, logic, string},
 };
 
 fn assert_args_count(expected_size: usize, list: &Vec<WfData>) -> Result<(), EvalError> {
@@ -33,6 +33,12 @@ pub fn dispatch_builtins(
             let boolean =
                 WfBoolean::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
             return Ok(logic::if_function(boolean, r#then, r#else));
+        }
+        811 => {
+            assert_args_count(1, &args_evaluated)?;
+            let list1 =
+                WfTypedList::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            return list::first_element(list1);
         }
         844 => {
             assert_args_count(2, &args_evaluated)?;

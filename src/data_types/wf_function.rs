@@ -93,7 +93,7 @@ impl WfFunction {
         context: &ExecutionContext,
     ) -> Result<WfImplementation, EvalError> {
         let mut implementations = Vec::new();
-        for (pos, implementation) in self.0.implementations.entries.iter().enumerate() {
+        for (pos, implementation) in self.0.implementations.iter().enumerate() {
             let implementation = match implementation.clone().evaluate(context) {
                 Ok(v) => v,
                 Err((e, _)) => return Err(e.inside_key(keyindex!(8, 4)).inside_list(pos)),

@@ -51,6 +51,8 @@ pub enum EvalErrorKind {
     ExpectedFunctionCallGotType,
     #[error("Test case failed with \"false\" result. Intermediate result: {0:?}")]
     TestCaseFailedWithFalse(Box<WfData>),
+    #[error("Can’t get head of an empty list")]
+    CantGetHeadOfEmptyList,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }

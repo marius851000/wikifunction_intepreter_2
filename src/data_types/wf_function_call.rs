@@ -98,7 +98,7 @@ impl WfFunctionCall {
 
         let function_identity = function.0.identity;
 
-        let num_argument = function.0.arguments.entries.len();
+        let num_argument = function.0.arguments.len();
 
         let num_argument_plus_one_as_u32: u32 = match num_argument.saturating_add(1).try_into() {
             Ok(v) => v,

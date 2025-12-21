@@ -1,4 +1,5 @@
 {
   "if function": [12823, 12824, 8020],
-  "string equality": [13389, 8660, 8661, 8662]
+  "string equality": [13389, 8660, 8661, 8662],
+  "first element": [8110]
 }
