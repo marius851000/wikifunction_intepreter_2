@@ -9,9 +9,12 @@ This version use what I think is called... forward evaluation? Basically, it rec
 - [x] parse XML dump
   - [ ] pre-process data such as, for example, Boolean are already stored as boolan and do not need conversion in the global context
 - [ ] correctly handle case where the identity has been dereferenced (recursive identity reference resolution)
-- [ ] running built-in function (e.g. Z844/boolean equality and Z802/if)
-  - [ ] make sure to check input/output type are correct.
+- [x] running built-in function (e.g. Z844/boolean equality and Z802/if)
 - [ ] running non-built-in function (e.g. Z10237/boolean inequality)
+- [ ] complete type checking:
+  - [ ] make sure to check input/output type are correct for function.
+  - [ ] make sure type of elements in list is correct
+  - [ ] make sure to check generic type (non-built-in type) are correct (run validation function too?)
 - [ ] running some tests (e.g. Z10238, a test for Z10237)
 - [ ] proper handling of non-built-in type, including equality (making use of identity)
 - [ ] proper handling of typed list

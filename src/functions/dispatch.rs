@@ -1,7 +1,7 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, Zid,
     data_types::{WfBoolean, WfData, WfDataType, WfFunctionCall},
-    functions::boolean,
+    functions::{boolean, logic},
 };
 
 fn assert_args_count(expected_size: usize, list: &Vec<WfData>) -> Result<(), EvalError> {
@@ -26,6 +26,14 @@ pub fn dispatch_builtins(
     }
 
     match function_zid.0.get() {
+        802 => {
+            assert_args_count(3, &args_evaluated)?;
+            let r#else = args_evaluated.pop().unwrap();
+            let r#if = args_evaluated.pop().unwrap();
+            let boolean =
+                WfBoolean::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            return Ok(logic::if_function(boolean, r#if, r#else));
+        }
         844 => {
             assert_args_count(2, &args_evaluated)?;
             let bool2 =
