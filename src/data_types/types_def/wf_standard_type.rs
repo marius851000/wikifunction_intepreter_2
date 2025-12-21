@@ -139,18 +139,18 @@ impl WfDataType for WfStandardType {
             .keys
             .clone()
             .substitute_function_arguments(info, context)
-            .map_err(|e| e.inside(keyindex!(4, 2)))?;
+            .map_err(|e| e.inside_key(keyindex!(4, 2)))?;
         let validator = self
             .inner
             .validator
             .clone()
             .substitute_function_arguments(info, context)
-            .map_err(|e| e.inside(keyindex!(4, 3)))?;
+            .map_err(|e| e.inside_key(keyindex!(4, 3)))?;
         let equality = if let Some(equality) = self.inner.equality.clone() {
             Some(
                 equality
                     .substitute_function_arguments(info, context)
-                    .map_err(|e| e.inside(keyindex!(4, 4)))?,
+                    .map_err(|e| e.inside_key(keyindex!(4, 4)))?,
             )
         } else {
             None
@@ -159,7 +159,7 @@ impl WfDataType for WfStandardType {
             Some(
                 display_function
                     .substitute_function_arguments(info, context)
-                    .map_err(|e| e.inside(keyindex!(4, 5)))?,
+                    .map_err(|e| e.inside_key(keyindex!(4, 5)))?,
             )
         } else {
             None
@@ -168,7 +168,7 @@ impl WfDataType for WfStandardType {
             Some(
                 reading_function
                     .substitute_function_arguments(info, context)
-                    .map_err(|e| e.inside(keyindex!(4, 6)))?,
+                    .map_err(|e| e.inside_key(keyindex!(4, 6)))?,
             )
         } else {
             None
@@ -178,7 +178,7 @@ impl WfDataType for WfStandardType {
                 Some(
                     type_converters_to_code
                         .substitute_function_arguments(info, context)
-                        .map_err(|e| e.inside(keyindex!(4, 7)))?,
+                        .map_err(|e| e.inside_key(keyindex!(4, 7)))?,
                 )
             } else {
                 None
@@ -188,7 +188,7 @@ impl WfDataType for WfStandardType {
                 Some(
                     type_converters_from_code
                         .substitute_function_arguments(info, context)
-                        .map_err(|e| e.inside(keyindex!(4, 8)))?,
+                        .map_err(|e| e.inside_key(keyindex!(4, 8)))?,
                 )
             } else {
                 None

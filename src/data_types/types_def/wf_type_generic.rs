@@ -26,7 +26,7 @@ impl WfTypeGeneric {
         let type_zid = match data.get_key_err(keyindex!(1, 1)) {
             Err(e) => return Err((e, data)),
             Ok(k) => match k.get_type_zid(context) {
-                Err((e, _)) => return Err((e.inside(keyindex!(1, 1)), data)),
+                Err((e, _)) => return Err((e.inside_key(keyindex!(1, 1)), data)),
                 Ok((z, _)) => z,
             },
         };
@@ -44,7 +44,8 @@ impl WfTypeGeneric {
             todo!();
         } else {
             Err((
-                EvalError::from_kind(EvalErrorKind::WrongTypeZidForType).inside(keyindex!(1, 1)),
+                EvalError::from_kind(EvalErrorKind::WrongTypeZidForType)
+                    .inside_key(keyindex!(1, 1)),
                 data,
             ))
         }

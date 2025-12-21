@@ -2,7 +2,10 @@ use std::{error::Error, fmt::Display};
 
 use thiserror::Error;
 
-use crate::{KeyIndex, KeyIndexParseError, Zid};
+use crate::{
+    KeyIndex, KeyIndexParseError, Zid,
+    data_types::{ImplementationByKind, WfData},
+};
 
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum EvalErrorKind {
@@ -42,6 +45,12 @@ pub enum EvalErrorKind {
     ArgumentReferenceNoKPart(KeyIndex),
     #[error("No argument found at 0-indexed position {0}")]
     ArgumentReferenceTooLarge(u32),
+    #[error("Built-in for function {0} is not implemented or inexistant")]
+    NoBuiltin(Zid),
+    #[error("Expected function call, found type")]
+    ExpectedFunctionCallGotType,
+    #[error("Test case failed with \"false\" result. Intermediate result: {0:?}")]
+    TestCaseFailedWithFalse(Box<WfData>),
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }
@@ -52,6 +61,8 @@ pub enum TraceEntry {
     Inside(KeyIndex),
     InsideList(usize), // position is starting from 0 for the first element of the list (which exclude the argument paramater)
     InsideReference(Zid),
+    //TODO: find a better way to identity implementation
+    InsideFunctionCall(Zid, ImplementationByKind), // zid is the ZID of the function
     Text(String),
 }
 
@@ -73,24 +84,29 @@ impl EvalError {
         Self::from_kind(EvalErrorKind::MissingKey(key))
     }
 
-    pub fn trace_str(mut self, text: &str) -> Self {
-        self.trace.push(TraceEntry::Text(text.to_string()));
+    pub fn trace(mut self, of: TraceEntry) -> Self {
+        self.trace.push(of);
         self
     }
 
-    pub fn inside(mut self, key: KeyIndex) -> Self {
-        self.trace.push(TraceEntry::Inside(key));
-        self
+    pub fn trace_str(self, text: &str) -> Self {
+        self.trace(TraceEntry::Text(text.to_string()))
     }
 
-    pub fn inside_list(mut self, pos: usize) -> Self {
-        self.trace.push(TraceEntry::InsideList(pos));
-        self
+    pub fn inside_key(self, key: KeyIndex) -> Self {
+        self.trace(TraceEntry::Inside(key))
     }
 
-    pub fn inside_reference_to(mut self, zid: Zid) -> Self {
-        self.trace.push(TraceEntry::InsideReference(zid));
-        self
+    pub fn inside_list(self, pos: usize) -> Self {
+        self.trace(TraceEntry::InsideList(pos))
+    }
+
+    pub fn inside_reference_to(self, zid: Zid) -> Self {
+        self.trace(TraceEntry::InsideReference(zid))
+    }
+
+    pub fn inside_function_call(self, zid: Zid, implementation: ImplementationByKind) -> Self {
+        self.trace(TraceEntry::InsideFunctionCall(zid, implementation))
     }
 }
 

@@ -1,10 +1,16 @@
 use std::{fs::File, io::BufReader};
 
 use anyhow::Context;
-use interpreter2::{
-    ExecutionContext, GlobalContext, RcI, Zid,
-    data_types::{WfData, WfDataType},
-};
+use interpreter2::{ExecutionContext, GlobalContext, RcI, Zid, data_types::WfTestCase, zid};
+
+fn run_test_case(zid: Zid, context: &ExecutionContext) {
+    let test_case = WfTestCase::parse(
+        context.get_global().get_object_value(&zid).unwrap(),
+        context,
+    )
+    .unwrap();
+    test_case.run_test(context).unwrap()
+}
 
 fn main() -> anyhow::Result<()> {
     let file =
@@ -14,19 +20,7 @@ fn main() -> anyhow::Result<()> {
 
     let execution_context = ExecutionContext::default_for_global(global_context.clone());
 
-    let to_get = Zid::from_u32_panic(10238);
-    println!(
-        "{} directly from entry: {:?}",
-        to_get,
-        global_context.get_object_value(&to_get).unwrap()
-    );
-    println!(
-        "{} evaluated: {:?}",
-        to_get,
-        WfData::new_reference(to_get)
-            .evaluate(&execution_context)
-            .unwrap()
-    );
+    run_test_case(zid!(12823), &execution_context);
 
     Ok(())
 }

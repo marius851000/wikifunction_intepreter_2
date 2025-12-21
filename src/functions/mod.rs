@@ -2,6 +2,7 @@
 
 pub mod boolean;
 pub mod logic;
+pub mod string;
 
 mod dispatch;
 pub use dispatch::dispatch_builtins;

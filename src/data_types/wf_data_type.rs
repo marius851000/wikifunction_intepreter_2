@@ -55,7 +55,7 @@ pub trait WfDataType: Debug + Clone {
     fn check_z1k1(&self, expected_value: Zid, context: &ExecutionContext) -> Result<(), EvalError> {
         self.get_key_err(keyindex!(1, 1))?
             .check_identity_zid(context, expected_value)
-            .map_err(|(e, _)| e.inside(keyindex!(1, 1)))?;
+            .map_err(|(e, _)| e.inside_key(keyindex!(1, 1)))?;
         Ok(())
     }
 
@@ -127,7 +127,7 @@ pub trait WfDataType: Debug + Clone {
 
         match evaluated.get_identity_zid(context, identity_key) {
             Ok(k) => return Ok(k),
-            Err(e) => Err(e.inside(identity_key)),
+            Err(e) => Err(e.inside_key(identity_key)),
         }
     }
 

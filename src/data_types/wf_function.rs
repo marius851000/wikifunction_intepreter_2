@@ -29,7 +29,7 @@ impl WfFunction {
         match data.get_key(keyindex!(1, 1)) {
             Some(r#type) => {
                 if let Err((e, _)) = r#type.check_identity_zid(context, zid!(8)) {
-                    return Err((e.inside(keyindex!(1, 1)), data));
+                    return Err((e.inside_key(keyindex!(1, 1)), data));
                 }
             }
             _ => return Err((EvalError::missing_key(keyindex!(1, 1)), data)),
@@ -38,9 +38,9 @@ impl WfFunction {
         let arguments = match data.get_key_err(keyindex!(8, 1)) {
             Err(e) => return Err((e, data)),
             Ok(v) => match v.evaluate(context) {
-                Err((e, _)) => return Err((e.inside(keyindex!(8, 1)), data)),
+                Err((e, _)) => return Err((e.inside_key(keyindex!(8, 1)), data)),
                 Ok(v) => match WfTypedList::parse(v, context) {
-                    Err((e, _)) => return Err((e.inside(keyindex!(8, 1)), data)),
+                    Err((e, _)) => return Err((e.inside_key(keyindex!(8, 1)), data)),
                     Ok(v) => v,
                 },
             },
@@ -49,9 +49,9 @@ impl WfFunction {
         let return_type = match data.get_key_err(keyindex!(8, 2)) {
             Err(e) => return Err((e, data)),
             Ok(v) => match v.evaluate(context) {
-                Err((e, _)) => return Err((e.inside(keyindex!(8, 2)), data)),
+                Err((e, _)) => return Err((e.inside_key(keyindex!(8, 2)), data)),
                 Ok(v) => match WfTypeGeneric::parse(v, context) {
-                    Err((e, _)) => return Err((e.inside(keyindex!(8, 2)), data)),
+                    Err((e, _)) => return Err((e.inside_key(keyindex!(8, 2)), data)),
                     Ok(v) => v,
                 },
             },
@@ -66,9 +66,9 @@ impl WfFunction {
         let implementations = match data.get_key_err(keyindex!(8, 4)) {
             Err(e) => return Err((e, data)),
             Ok(v) => match v.evaluate(context) {
-                Err((e, _)) => return Err((e.inside(keyindex!(8, 4)), data)),
+                Err((e, _)) => return Err((e.inside_key(keyindex!(8, 4)), data)),
                 Ok(v) => match WfTypedList::parse(v, context) {
-                    Err((e, _)) => return Err((e.inside(keyindex!(8, 4)), data)),
+                    Err((e, _)) => return Err((e.inside_key(keyindex!(8, 4)), data)),
                     Ok(v) => v,
                 },
             },
@@ -96,12 +96,12 @@ impl WfFunction {
         for (pos, implementation) in self.0.implementations.entries.iter().enumerate() {
             let implementation = match implementation.clone().evaluate(context) {
                 Ok(v) => v,
-                Err((e, _)) => return Err(e.inside(keyindex!(8, 4)).inside_list(pos)),
+                Err((e, _)) => return Err(e.inside_key(keyindex!(8, 4)).inside_list(pos)),
             };
 
             let implementation = match WfImplementation::parse(implementation, context) {
                 Ok(i) => i,
-                Err((e, _)) => return Err(e.inside(keyindex!(8, 4)).inside_list(pos)),
+                Err((e, _)) => return Err(e.inside_key(keyindex!(8, 4)).inside_list(pos)),
             };
 
             implementations.push(implementation);

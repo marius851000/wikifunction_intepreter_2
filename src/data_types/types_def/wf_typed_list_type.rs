@@ -24,7 +24,7 @@ impl WfTypedListType {
         match data.get_key_err(keyindex!(1, 1)) {
             Ok(this_type) => {
                 if let Err((e, _)) = this_type.check_identity_zid(context, zid!(7)) {
-                    return Err((e.inside(keyindex!(1, 1)), data));
+                    return Err((e.inside_key(keyindex!(1, 1)), data));
                 }
             }
             Err(e) => return Err((e, data)),
@@ -34,7 +34,7 @@ impl WfTypedListType {
         match data.get_key_err(keyindex!(7, 1)) {
             Ok(this_function) => {
                 if let Err((e, _)) = this_function.check_identity_zid(context, zid!(881)) {
-                    return Err((e.inside(keyindex!(7, 1)), data));
+                    return Err((e.inside_key(keyindex!(7, 1)), data));
                 }
             }
             Err(e) => return Err((e, data)),
@@ -44,9 +44,9 @@ impl WfTypedListType {
         let r#type = match data.get_key_err(keyindex!(881, 1)) {
             Err(e) => return Err((e, data)),
             Ok(unparsed_type) => match unparsed_type.evaluate(context) {
-                Err((e, _)) => return Err((e.inside(keyindex!(881, 1)), data)),
+                Err((e, _)) => return Err((e.inside_key(keyindex!(881, 1)), data)),
                 Ok(unparsed_type) => match WfTypeGeneric::parse(unparsed_type, context) {
-                    Err((e, _)) => return Err((e.inside(keyindex!(881, 1)), data)),
+                    Err((e, _)) => return Err((e.inside_key(keyindex!(881, 1)), data)),
                     Ok(v) => v,
                 },
             },
@@ -98,11 +98,11 @@ impl WfDataType for WfTypedListType {
                 (&*self.r#type)
                     .clone()
                     .substitute_function_arguments(info, context)
-                    .map_err(|e| e.inside(keyindex!(881, 1)))?,
+                    .map_err(|e| e.inside_key(keyindex!(881, 1)))?,
                 context,
             ) {
                 Ok(v) => v,
-                Err((e, _)) => return Err(e.inside(keyindex!(881, 1))),
+                Err((e, _)) => return Err(e.inside_key(keyindex!(881, 1))),
             },
         )
         .into_wf_data())

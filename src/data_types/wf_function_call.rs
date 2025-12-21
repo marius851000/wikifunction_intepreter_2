@@ -25,21 +25,37 @@ pub struct WfFunctionCall(pub RcI<WfFunctionCallInner>);
 
 #[allow(unused_assignments)] //TODO: remove once parse is fully implemented
 impl WfFunctionCall {
-    /// May return a type as a shortcut for typed function function call
     pub fn parse(
+        data: WfData,
+        context: &ExecutionContext,
+    ) -> Result<FunctionCallOrType, (EvalError, WfData)> {
+        Self::parse_inner(data, context, None)
+    }
+
+    pub fn parse_for_test(
+        data: WfData,
+        context: &ExecutionContext,
+        substitute_first_arg: WfData,
+    ) -> Result<FunctionCallOrType, (EvalError, WfData)> {
+        Self::parse_inner(data, context, Some(substitute_first_arg))
+    }
+
+    /// May return a type as a shortcut for typed function function call
+    pub fn parse_inner(
         mut data: WfData,
         context: &ExecutionContext,
+        mut substitute_first_arg: Option<WfData>,
     ) -> Result<FunctionCallOrType, (EvalError, WfData)> {
         if let WfData::WfFunctionCall(v) = data {
             return Ok(FunctionCallOrType::FunctionCall(v));
         }
-
         data.assert_evaluated();
+
         // check type of this
         match data.get_key_err(keyindex!(1, 1)) {
             Ok(this_type) => {
                 if let Err((e, _)) = this_type.check_identity_zid(context, zid!(7)) {
-                    return Err((e.inside(keyindex!(1, 1)), data));
+                    return Err((e.inside_key(keyindex!(1, 1)), data));
                 }
             }
             Err(e) => return Err((e, data)),
@@ -72,12 +88,12 @@ impl WfFunctionCall {
 
         let function_evaluated = match function_unevaluated.evaluate(context) {
             Ok(v) => v,
-            Err((e, _)) => return Err((e.inside(keyindex!(7, 1)), data)),
+            Err((e, _)) => return Err((e.inside_key(keyindex!(7, 1)), data)),
         };
 
         let function = match WfFunction::parse(function_evaluated, context) {
             Ok(v) => v,
-            Err((e, _)) => return Err((e.inside(keyindex!(7, 1)), data)),
+            Err((e, _)) => return Err((e.inside_key(keyindex!(7, 1)), data)),
         };
 
         let function_identity = function.0.identity;
@@ -97,10 +113,16 @@ impl WfFunctionCall {
         let mut args = Vec::new();
         //TODO: I’m not sure this is correct. I think keys also might be listed as K1, K2, etc... If that is changed, remember to change get_key and list_key
         for i in 1..num_argument_plus_one_as_u32 {
-            let key = KeyIndex::from_u32s_panic(Some(function_identity.0.into()), Some(i)); // should not panic, z is already a valid Zid and i is always strictly greater than 0
-            let parameter = match data.get_key_err(key) {
-                Ok(k) => k,
-                Err(e) => return Err((e, data)),
+            let parameter = if i == 1
+                && let Some(substitute_first_arg) = substitute_first_arg.take()
+            {
+                substitute_first_arg
+            } else {
+                let key = KeyIndex::from_u32s_panic(Some(function_identity.0.into()), Some(i)); // should not panic, z is already a valid Zid and i is always strictly greater than 0
+                match data.get_key_err(key) {
+                    Ok(k) => k,
+                    Err(e) => return Err((e, data)),
+                }
             };
             args.push(parameter)
         }
@@ -160,7 +182,7 @@ impl WfDataType for WfFunctionCall {
             .0
             .function
             .get_preffered_implementation(context)
-            .map_err(|e| e.inside(keyindex!(7, 1)))
+            .map_err(|e| e.inside_key(keyindex!(7, 1)))
         {
             Ok(i) => i,
             Err(e) => return Err((e, self)),
@@ -171,11 +193,27 @@ impl WfDataType for WfFunctionCall {
                 let inner_substituted =
                     match inner.clone().substitute_function_arguments(&self, context) {
                         Ok(v) => v,
-                        Err(e) => return Err((e, self)),
+                        Err(e) => {
+                            return Err((
+                                e.inside_function_call(
+                                    self.0.function.0.identity,
+                                    implementation.0.r#impl.clone(),
+                                ),
+                                self,
+                            ));
+                        }
                     };
                 let inner = match inner_substituted.evaluate(context) {
                     Ok(v) => v,
-                    Err((e, _)) => return Err((e, self)),
+                    Err((e, _)) => {
+                        return Err((
+                            e.inside_function_call(
+                                self.0.function.0.identity,
+                                implementation.0.r#impl.clone(),
+                            ),
+                            self,
+                        ));
+                    }
                 };
                 Ok(inner)
             }
@@ -183,7 +221,13 @@ impl WfDataType for WfFunctionCall {
             ImplementationByKind::Builtin(_) => {
                 match dispatch_builtins(self.0.function.0.identity, &self, context) {
                     Ok(v) => Ok(v),
-                    Err(e) => Err((e, self)),
+                    Err(e) => Err((
+                        e.inside_function_call(
+                            self.0.function.0.identity,
+                            implementation.0.r#impl.clone(),
+                        ),
+                        self,
+                    )),
                 }
             }
         }
@@ -203,7 +247,7 @@ impl WfDataType for WfFunctionCall {
             let arg = arg
                 .clone()
                 .substitute_function_arguments(info, context)
-                .map_err(|e| e.inside(todo!()))?;
+                .map_err(|e| e.inside_key(todo!()))?;
             new_args.push(arg);
         }
         Ok(Self(RcI::new(WfFunctionCallInner {

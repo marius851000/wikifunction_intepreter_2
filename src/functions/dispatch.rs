@@ -1,7 +1,7 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, Zid,
-    data_types::{WfBoolean, WfData, WfDataType, WfFunctionCall},
-    functions::{boolean, logic},
+    data_types::{WfBoolean, WfData, WfDataType, WfFunctionCall, WfString},
+    functions::{boolean, logic, string},
 };
 
 fn assert_args_count(expected_size: usize, list: &Vec<WfData>) -> Result<(), EvalError> {
@@ -29,10 +29,10 @@ pub fn dispatch_builtins(
         802 => {
             assert_args_count(3, &args_evaluated)?;
             let r#else = args_evaluated.pop().unwrap();
-            let r#if = args_evaluated.pop().unwrap();
+            let r#then = args_evaluated.pop().unwrap();
             let boolean =
                 WfBoolean::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
-            return Ok(logic::if_function(boolean, r#if, r#else));
+            return Ok(logic::if_function(boolean, r#then, r#else));
         }
         844 => {
             assert_args_count(2, &args_evaluated)?;
@@ -42,8 +42,14 @@ pub fn dispatch_builtins(
                 WfBoolean::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
             return Ok(boolean::boolean_equality(bool1, bool2).into_wf_data());
         }
-        _ => {
-            todo!("unimplemented builtin for function {}", function_zid)
+        866 => {
+            assert_args_count(2, &args_evaluated)?;
+            let string2 =
+                WfString::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            let string1 =
+                WfString::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            return Ok(string::string_equality(string1, string2).into_wf_data());
         }
+        _ => return Err(EvalError::from_kind(EvalErrorKind::NoBuiltin(function_zid))),
     }
 }

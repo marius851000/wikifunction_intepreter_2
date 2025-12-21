@@ -109,7 +109,7 @@ impl WfData {
             let this_equality = match value_first.equality(value_second, context) {
                 Ok(v) => v,
                 Err((e, error_source_which)) => {
-                    return Err((e.inside(key), error_source_which));
+                    return Err((e.inside_key(key), error_source_which));
                 }
             };
 

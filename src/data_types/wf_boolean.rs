@@ -23,7 +23,7 @@ impl WfBoolean {
             None => return Err((EvalError::missing_key(keyindex!(1, 1)), data)),
             Some(r#type) => {
                 if let Err((e, _content)) = r#type.check_identity_zid(context, zid!(40)) {
-                    return Err((e.inside(keyindex!(1, 1)), data));
+                    return Err((e.inside_key(keyindex!(1, 1)), data));
                 }
             }
         };
@@ -36,9 +36,9 @@ impl WfBoolean {
         match identity.get_reference(context) {
             Ok((reference, _identity)) => {
                 if reference == zid!(41) {
-                    Ok(Self { value: false })
-                } else if reference == zid!(42) {
                     Ok(Self { value: true })
+                } else if reference == zid!(42) {
+                    Ok(Self { value: false })
                 } else {
                     Err((
                         EvalError::from_kind(EvalErrorKind::IncorrectIdentityForBoolean(reference)),
@@ -48,7 +48,7 @@ impl WfBoolean {
             }
             Err((_err, identity)) => match Self::parse(identity, context) {
                 Ok(v) => Ok(v),
-                Err((e, _)) => Err((e.inside(keyindex!(40, 1)), data)),
+                Err((e, _)) => Err((e.inside_key(keyindex!(40, 1)), data)),
             },
         }
     }
@@ -114,7 +114,7 @@ mod tests {
         });
         assert_eq!(
             WfBoolean::parse(boolean_construct, &context).unwrap(),
-            WfBoolean::new(true)
+            WfBoolean::new(false)
         );
 
         // simple case, reference

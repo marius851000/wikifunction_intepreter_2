@@ -60,6 +60,7 @@ impl Display for Zid {
     }
 }
 
+#[macro_export]
 macro_rules! zid {
     ($z:expr) => {{
         const ZID: $crate::Zid = $crate::Zid::from_u32_panic($z);

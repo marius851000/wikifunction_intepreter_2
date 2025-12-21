@@ -1,6 +1,9 @@
 use crate::{
-    EvalError, ExecutionContext, KeyIndex, RcI,
-    data_types::{WfData, WfDataType, WfFunction, util::SubstitutionInfo},
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex, RcI,
+    data_types::{
+        WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, util::SubstitutionInfo,
+        wf_function_call::FunctionCallOrType,
+    },
 };
 
 #[derive(Clone, PartialEq, Debug)]
@@ -27,12 +30,12 @@ impl WfTestCase {
         let function_unparsed =
             match get_value_from_data_err_handled!(data, keyindex!(20, 1)).evaluate(context) {
                 Ok(v) => v,
-                Err((e, _)) => return Err((e.inside(keyindex!(20, 1)), data)),
+                Err((e, _)) => return Err((e.inside_key(keyindex!(20, 1)), data)),
             };
 
         let function = match WfFunction::parse(function_unparsed, context) {
             Ok(f) => f,
-            Err((e, _)) => return Err((e.inside(keyindex!(20, 1)), data)),
+            Err((e, _)) => return Err((e.inside_key(keyindex!(20, 1)), data)),
         };
 
         let call = get_value_from_data_err_handled!(data, keyindex!(20, 2));
@@ -43,6 +46,45 @@ impl WfTestCase {
             call,
             validation,
         })))
+    }
+
+    pub fn run_test(self, context: &ExecutionContext) -> Result<(), EvalError> {
+        let test_result = match self.0.call.clone().evaluate(context) {
+            Ok(v) => v,
+            Err((e, _)) => return Err(e),
+        };
+
+        let patched_function_call = match WfFunctionCall::parse_for_test(
+            self.0.validation.clone(),
+            context,
+            test_result.clone(),
+        ) {
+            Ok(FunctionCallOrType::FunctionCall(c)) => c,
+            Ok(FunctionCallOrType::Type(_type)) => {
+                return Err(EvalError::from_kind(
+                    EvalErrorKind::ExpectedFunctionCallGotType,
+                ));
+            } //TODO: trace
+            Err((e, _)) => return Err(e),
+        };
+
+        let boolean_result_unparsed = match patched_function_call.evaluate(context) {
+            Ok(result) => result,
+            Err((e, _)) => return Err(e), //TODO: trace
+        };
+
+        let boolean_result = match WfBoolean::parse(boolean_result_unparsed, context) {
+            Ok(result) => result,
+            Err((e, _)) => return Err(e), //TODO: trace
+        };
+
+        if boolean_result.value {
+            Ok(())
+        } else {
+            Err(EvalError::from_kind(
+                EvalErrorKind::TestCaseFailedWithFalse(Box::new(test_result)),
+            ))
+        }
     }
 }
 
@@ -83,7 +125,7 @@ impl WfDataType for WfTestCase {
     }
 
     fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
-        todo!();
+        todo!("evaluate the function (but not the call and validator)");
     }
 
     fn substitute_function_arguments<I: SubstitutionInfo>(
@@ -97,24 +139,24 @@ impl WfDataType for WfTestCase {
                     .function
                     .clone()
                     .substitute_function_arguments(info, context)
-                    .map_err(|e| e.inside(keyindex!(20, 1)))?,
+                    .map_err(|e| e.inside_key(keyindex!(20, 1)))?,
                 context,
             ) {
                 Ok(v) => v,
-                Err((e, _)) => return Err(e.inside(keyindex!(20, 2))),
+                Err((e, _)) => return Err(e.inside_key(keyindex!(20, 2))),
             },
             call: self
                 .0
                 .call
                 .clone()
                 .substitute_function_arguments(info, context)
-                .map_err(|e| e.inside(keyindex!(20, 2)))?,
+                .map_err(|e| e.inside_key(keyindex!(20, 2)))?,
             validation: self
                 .0
                 .validation
                 .clone()
                 .substitute_function_arguments(info, context)
-                .map_err(|e| e.inside(keyindex!(20, 3)))?,
+                .map_err(|e| e.inside_key(keyindex!(20, 3)))?,
         }))
         .into_wf_data())
     }

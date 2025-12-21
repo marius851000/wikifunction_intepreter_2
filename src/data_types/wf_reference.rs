@@ -1,9 +1,11 @@
+use std::fmt::Debug;
+
 use crate::{
     EvalError, ExecutionContext, KeyIndex, Zid,
     data_types::{WfData, WfDataType},
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct WfReference {
     pub to: Zid,
 }
@@ -11,6 +13,12 @@ pub struct WfReference {
 impl WfReference {
     pub fn new(to: Zid) -> Self {
         Self { to }
+    }
+}
+
+impl Debug for WfReference {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "WfReference({})", self.to)
     }
 }
 
@@ -43,9 +51,10 @@ impl WfDataType for WfReference {
         match context.get_global().get_object_value(&self.to) {
             Err(e) => Err((e, self)),
             Ok(v) => match v.evaluate(context) {
-                Err((e, _data)) => {
-                    Err((e.inside(keyindex!(9, 1)).inside_reference_to(self.to), self))
-                }
+                Err((e, _data)) => Err((
+                    e.inside_key(keyindex!(9, 1)).inside_reference_to(self.to),
+                    self,
+                )),
                 Ok(v) => Ok(v),
             },
         }

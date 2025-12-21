@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use crate::{
     EvalError, ExecutionContext, KeyIndex, RcI, Zid,
     data_types::{
-        WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, WfTestCase,
+        WfArgumentReference, WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall,
+        WfImplementation, WfTestCase,
         types_def::{WfStandardType, WfTypeGeneric},
         wf_function_call::FunctionCallOrType,
     },
@@ -77,11 +78,25 @@ impl WfUntyped {
                         Ok(v) => return Ok(v.into_wf_data()),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
-                } else if type_zid == zid!(20) {
-                    match WfTestCase::parse(self.into_wf_data(), context) {
+                } else if type_zid == zid!(14) {
+                    match WfImplementation::parse(self.into_wf_data(), context) {
                         Ok(v) => return Ok(v.into_wf_data()),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
+                } else if type_zid == zid!(18) {
+                    match WfArgumentReference::parse(self.into_wf_data(), context) {
+                        Ok(v) => return Ok(v.into_wf_data()),
+                        Err((e, data)) => return Err((e, WfUntyped::parse(data))),
+                    }
+                } else if type_zid == zid!(20) {
+                    let test_case = match WfTestCase::parse(self.into_wf_data(), context) {
+                        Ok(v) => v,
+                        Err((e, data)) => return Err((e, WfUntyped::parse(data))),
+                    };
+                    match test_case.evaluate(context) {
+                        Ok(v) => return Ok(v),
+                        Err((e, data)) => return Err((e, WfUntyped::parse(data.into_wf_data()))),
+                    };
                 } else if type_zid == zid!(40) {
                     match WfBoolean::parse(self.into_wf_data(), context) {
                         Ok(v) => return Ok(v.into_wf_data()),
@@ -94,7 +109,7 @@ impl WfUntyped {
             Err((_e, z1k1)) => {
                 let r#type = match z1k1.parse_type(context) {
                     Err((e, _)) => {
-                        return Err((e.inside(keyindex!(1, 1)), self));
+                        return Err((e.inside_key(keyindex!(1, 1)), self));
                     }
                     Ok(r#type) => r#type,
                 };
@@ -155,7 +170,7 @@ impl WfDataType for WfUntyped {
                 k.clone(),
                 v.clone()
                     .substitute_function_arguments(info, context)
-                    .map_err(|e| e.inside(k.clone()))?,
+                    .map_err(|e| e.inside_key(k.clone()))?,
             );
         }
         Ok(Self::new(new_entries).into_wf_data())

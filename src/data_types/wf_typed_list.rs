@@ -1,6 +1,8 @@
 use crate::{
     EvalError, ExecutionContext, KeyIndex, RcI,
-    data_types::{MaybeEvaluated, WfData, WfDataType, types_def::WfTypeGeneric},
+    data_types::{
+        MaybeEvaluated, WfData, WfDataType, types_def::WfTypeGeneric, util::SubstitutionInfo,
+    },
 };
 
 /// The type may be either evaluated and checked to be valid, or unevaluated.
@@ -65,12 +67,12 @@ impl WfDataType for WfTypedList {
             if let MaybeEvaluated::Unchecked(type_unchecked) = (*self.inner_type).clone() {
                 let type_evaluated = match type_unchecked.evaluate(context) {
                     Ok(v) => v,
-                    Err((e, _)) => return Err((e.inside(keyindex!(1, 1)), self)),
+                    Err((e, _)) => return Err((e.inside_key(keyindex!(1, 1)), self)),
                 };
 
                 let checked_type = match WfTypeGeneric::parse(type_evaluated, context) {
                     Ok(v) => v,
-                    Err((e, _)) => return Err((e.inside(keyindex!(1, 1)), self)),
+                    Err((e, _)) => return Err((e.inside_key(keyindex!(1, 1)), self)),
                 };
 
                 Ok((Self {
@@ -86,11 +88,40 @@ impl WfDataType for WfTypedList {
         }
     }
 
-    fn substitute_function_arguments<I: super::util::SubstitutionInfo>(
+    fn substitute_function_arguments<I: SubstitutionInfo>(
         self,
-        _info: &I,
-        _context: &ExecutionContext,
+        info: &I,
+        context: &ExecutionContext,
     ) -> Result<WfData, EvalError> {
-        todo!("argument substitution for list")
+        let mut new_entries = Vec::new();
+        for (pos, entry) in self.entries.iter().enumerate() {
+            new_entries.push(
+                entry
+                    .clone()
+                    .substitute_function_arguments(info, context)
+                    .map_err(|e| e.inside_list(pos))?,
+            )
+        }
+
+        Ok((Self {
+            entries: RcI::new(new_entries),
+            inner_type: RcI::new(match (&*self.inner_type).clone() {
+                MaybeEvaluated::Unchecked(v) => MaybeEvaluated::Unchecked(
+                    v.substitute_function_arguments(info, context)
+                        .map_err(|e| e.inside_key(keyindex!(1, 1)))?,
+                ),
+                MaybeEvaluated::Valid(v) => MaybeEvaluated::Valid(
+                    match WfTypeGeneric::parse(
+                        v.substitute_function_arguments(info, context)
+                            .map_err(|e| e.inside_key(keyindex!(1, 1)))?,
+                        context,
+                    ) {
+                        Ok(v) => v,
+                        Err((e, _)) => return Err(e.inside_key(keyindex!(1, 1))),
+                    },
+                ),
+            }),
+        })
+        .into_wf_data())
     }
 }

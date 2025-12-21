@@ -22,19 +22,20 @@ impl WfArgumentReference {
         let key_index_evaluated =
             match get_value_from_data_err_handled!(data, keyindex!(18, 1)).evaluate(context) {
                 Ok(k) => k,
-                Err((e, _)) => return Err((e.inside(keyindex!(18, 1)), data)),
+                Err((e, _)) => return Err((e.inside_key(keyindex!(18, 1)), data)),
             };
 
         let key_index_as_string = match WfString::parse(key_index_evaluated, context) {
             Ok(k) => k,
-            Err((e, _)) => return Err((e.inside(keyindex!(18, 1)), data)),
+            Err((e, _)) => return Err((e.inside_key(keyindex!(18, 1)), data)),
         };
 
         let key_index = match KeyIndex::from_str(&key_index_as_string.text) {
             Ok(k) => k,
             Err(e) => {
                 return Err((
-                    EvalError::from_kind(EvalErrorKind::ParseKeyIndex(e)).inside(keyindex!(18, 1)),
+                    EvalError::from_kind(EvalErrorKind::ParseKeyIndex(e))
+                        .inside_key(keyindex!(18, 1)),
                     data,
                 ));
             }
