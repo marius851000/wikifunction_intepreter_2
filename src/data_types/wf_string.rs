@@ -13,12 +13,26 @@ impl WfString {
         Self { text: text.into() }
     }
 
-    pub fn parse(data: WfData, _context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
+    pub fn parse(data: WfData, context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
         if let WfData::WfString(s) = data {
             return Ok(s);
         };
-
-        todo!();
+        data.assert_evaluated();
+        match data.check_z1k1(zid!(6), context) {
+            Ok(()) => (),
+            Err(e) => return Err((e, data)),
+        };
+        let below_string = match data.get_key_err(keyindex!(6, 1)) {
+            Err(e) => return Err((e.inside_key(keyindex!(6, 1)), data)),
+            Ok(v) => match v.evaluate(context) {
+                Err((e, _)) => return Err((e.inside_key(keyindex!(6, 1)), data)),
+                Ok(v) => match WfString::parse(v, context) {
+                    Ok(v) => v,
+                    Err((e, _)) => return Err((e.inside_key(keyindex!(6, 1)), data)),
+                },
+            },
+        };
+        Ok(below_string)
     }
 }
 
