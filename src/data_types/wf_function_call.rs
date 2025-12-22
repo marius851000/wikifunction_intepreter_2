@@ -197,7 +197,7 @@ impl WfDataType for WfFunctionCall {
                             return Err((
                                 e.inside_function_call(
                                     self.0.function.0.identity,
-                                    implementation.0.r#impl.clone(),
+                                    //implementation.0.r#impl.clone(),
                                 ),
                                 self,
                             ));
@@ -209,7 +209,7 @@ impl WfDataType for WfFunctionCall {
                         return Err((
                             e.inside_function_call(
                                 self.0.function.0.identity,
-                                implementation.0.r#impl.clone(),
+                                //implementation.0.r#impl.clone(),
                             ),
                             self,
                         ));
@@ -221,13 +221,7 @@ impl WfDataType for WfFunctionCall {
             ImplementationByKind::Builtin(_) => {
                 match dispatch_builtins(self.0.function.0.identity, &self, context) {
                     Ok(v) => Ok(v),
-                    Err(e) => Err((
-                        e.inside_function_call(
-                            self.0.function.0.identity,
-                            implementation.0.r#impl.clone(),
-                        ),
-                        self,
-                    )),
+                    Err(e) => Err((e, self)),
                 }
             }
         }

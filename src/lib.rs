@@ -24,6 +24,7 @@ mod global_context;
 pub use global_context::GlobalContext;
 
 pub mod functions;
+pub mod replay;
 
 #[cfg(test)]
 mod bench;

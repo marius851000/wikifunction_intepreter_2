@@ -1,5 +1,5 @@
 use crate::{
-    EvalError, EvalErrorKind, ExecutionContext, Zid,
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
     data_types::{
         WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, WfString, WfTypedList,
     },
@@ -23,8 +23,13 @@ pub fn dispatch_builtins(
 ) -> Result<WfData, EvalError> {
     //TODO: proper error tracing.
     let mut args_evaluated = Vec::new();
-    for arg in call.0.args.iter() {
-        args_evaluated.push(arg.clone().evaluate(context).map_err(|(e, _)| e)?);
+    for (pos, arg) in call.0.args.iter().enumerate() {
+        args_evaluated.push(arg.clone().evaluate(context).map_err(|(e, _)| {
+            e.inside_key(KeyIndex::from_u32s_panic(
+                Some(function_zid.0.get()),
+                Some(pos as u32 + 1),
+            ))
+        })?);
     }
 
     match function_zid.0.get() {
@@ -44,10 +49,10 @@ pub fn dispatch_builtins(
         }
         844 => {
             assert_args_count(2, &args_evaluated)?;
-            let bool2 =
-                WfBoolean::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
-            let bool1 =
-                WfBoolean::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            let bool2 = WfBoolean::parse(args_evaluated.pop().unwrap(), context)
+                .map_err(|(e, _)| e.inside_key(keyindex!(844, 2)))?;
+            let bool1 = WfBoolean::parse(args_evaluated.pop().unwrap(), context)
+                .map_err(|(e, _)| e.inside_key(keyindex!(844, 1)))?;
             return Ok(boolean::boolean_equality(bool1, bool2).into_wf_data());
         }
         866 => {

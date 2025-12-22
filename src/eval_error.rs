@@ -2,10 +2,7 @@ use std::{error::Error, fmt::Display};
 
 use thiserror::Error;
 
-use crate::{
-    KeyIndex, KeyIndexParseError, Zid,
-    data_types::{ImplementationByKind, WfData},
-};
+use crate::{KeyIndex, KeyIndexParseError, Zid, data_types::WfData};
 
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum EvalErrorKind {
@@ -59,14 +56,15 @@ pub enum EvalErrorKind {
     TestData,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)] //TODO:
 pub enum TraceEntry {
-    Inside(KeyIndex),
+    InsideKey(KeyIndex),
     InsideList(usize), // position is starting from 0 for the first element of the list (which exclude the argument paramater)
     InsideReference(Zid),
     //TODO: find a better way to identity implementation
-    InsideFunctionCall(Zid, ImplementationByKind), // zid is the ZID of the function
+    /// This should only be used once all the argument had been parsed and substituted (is that kind of stuff even necessary?)
+    InsideFunctionCall(Zid), // zid is the ZID of the function
     Text(String),
 }
 
@@ -88,6 +86,14 @@ impl EvalError {
         Self::from_kind(EvalErrorKind::MissingKey(key))
     }
 
+    pub fn get_kind(&self) -> &EvalErrorKind {
+        &self.kind
+    }
+
+    pub fn get_trace(&self) -> &Vec<TraceEntry> {
+        return &self.trace;
+    }
+
     pub fn trace(mut self, of: TraceEntry) -> Self {
         self.trace.push(of);
         self
@@ -98,7 +104,7 @@ impl EvalError {
     }
 
     pub fn inside_key(self, key: KeyIndex) -> Self {
-        self.trace(TraceEntry::Inside(key))
+        self.trace(TraceEntry::InsideKey(key))
     }
 
     pub fn inside_list(self, pos: usize) -> Self {
@@ -109,8 +115,8 @@ impl EvalError {
         self.trace(TraceEntry::InsideReference(zid))
     }
 
-    pub fn inside_function_call(self, zid: Zid, implementation: ImplementationByKind) -> Self {
-        self.trace(TraceEntry::InsideFunctionCall(zid, implementation))
+    pub fn inside_function_call(self, zid: Zid) -> Self {
+        self.trace(TraceEntry::InsideFunctionCall(zid))
     }
 }
 
