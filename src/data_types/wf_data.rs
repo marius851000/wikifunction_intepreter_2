@@ -121,6 +121,8 @@ impl WfData {
         Ok(true)
     }
 
+    /// May be not evaluated. Allow a shortcut for known type.
+    /// Will be evaluated if needed.
     pub fn get_type_zid(
         self,
         context: &ExecutionContext,
@@ -131,7 +133,8 @@ impl WfData {
             return Ok((reference.to, self));
         }
         // slow path
-        let r#type = self.parse_type(context)?;
+        let this = self.evaluate(context)?;
+        let r#type = this.parse_type(context)?;
         match r#type.get_type_zid() {
             Ok(zid) => Ok((zid, WfData::WfType(r#type))),
             Err(e) => Err((e, WfData::WfType(r#type))),
