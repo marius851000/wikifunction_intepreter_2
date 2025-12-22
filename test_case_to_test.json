@@ -1,5 +1,7 @@
 {
   "if function": [12823, 12824, 8020],
   "string equality": [13389, 8660, 8661, 8662],
-  "first element": [8110]
+  "first element": [8110, 13235],
+  "--TODO: Z18656 for list equality (need arbitrary type struct)": [],
+  "list equality": [12749, 12750, 12751, 12752, 13400, 13401]
 }

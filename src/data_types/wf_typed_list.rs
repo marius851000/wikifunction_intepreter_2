@@ -1,7 +1,9 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, RcI,
     data_types::{
-        MaybeEvaluated, WfData, WfDataType, types_def::WfTypeGeneric, util::SubstitutionInfo,
+        MaybeEvaluated, WfData, WfDataType,
+        types_def::{WfTypeGeneric, WfTypedListType},
+        util::SubstitutionInfo,
     },
 };
 
@@ -24,6 +26,7 @@ pub struct WfTypedListInner {
 pub struct WfTypedList {
     inner: RcI<WfTypedListInner>,
     // directly point to the inner data, not a WfTypedListType (unless for a list of list)
+    // And assuming it is evaluated
     pub inner_type: RcI<MaybeEvaluated<WfTypeGeneric>>,
     /// should never be greater than entries (except if there is no chain_into)
     start_position: usize,
@@ -77,12 +80,10 @@ impl WfTypedList {
 
     /// First WfData of result is head, second element (Self) is tail.
     /// return an error if the list is empty. May still return an empty list as tail if just one element is present.
-    /// check the type of the head, which requires it being evaluated (will only be evaluated if check_type is true)
-    /// As such, the context will also only be used if check_type is true
+    /// check type (and evaluate the data as by product) if context is provided
     pub fn split_first_element(
         mut self,
-        check_type: bool,
-        context: &ExecutionContext,
+        context: Option<&ExecutionContext>,
     ) -> Result<(WfData, Self), (EvalError, Self)> {
         let mut head = if let Some(e) = self.inner.entries.get(self.start_position) {
             e.clone()
@@ -93,7 +94,7 @@ impl WfTypedList {
             ));
         };
 
-        if check_type {
+        if let Some(context) = context {
             head = match head.evaluate(context) {
                 Ok(v) => v,
                 Err((e, _)) => return Err((e, self)),
@@ -122,6 +123,16 @@ impl WfTypedList {
             typed_list: self.clone(),
         }
     }
+
+    pub fn iter_checked<'l>(
+        &self,
+        context: &'l ExecutionContext,
+    ) -> WfTypedListCheckedIterator<'l> {
+        WfTypedListCheckedIterator {
+            typed_list: self.clone(),
+            context,
+        }
+    }
 }
 
 impl WfDataType for WfTypedList {
@@ -133,8 +144,33 @@ impl WfDataType for WfTypedList {
         None
     }
 
-    fn get_key(&self, _key: KeyIndex) -> Option<WfData> {
-        todo!();
+    fn get_key(&self, key: KeyIndex) -> Option<WfData> {
+        if key == keyindex!(1, 1) {
+            match &*self.inner_type {
+                MaybeEvaluated::Unchecked(v) => Some(v.clone()),
+                MaybeEvaluated::Valid(v) => Some(WfTypedListType::new(v.clone()).into_wf_data()),
+            }
+        } else if key == KeyIndex::from_u32s_panic(None, Some(1)) {
+            if !self.is_empty() {
+                Some(self.clone().split_first_element(None).unwrap().0)
+            } else {
+                None
+            }
+        } else if key == KeyIndex::from_u32s_panic(None, Some(2)) {
+            if !self.is_empty() {
+                Some(
+                    self.clone()
+                        .split_first_element(None)
+                        .unwrap()
+                        .1
+                        .into_wf_data(),
+                )
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     fn list_keys(&self) -> Vec<KeyIndex> {
@@ -247,6 +283,46 @@ impl Iterator for WfTypedListIterator {
             self.typed_list.start_position += 1;
             self.typed_list.switch_to_next_entry_group_as_needed();
             Some(element)
+        }
+    }
+}
+
+pub struct WfTypedListCheckedIterator<'l> {
+    typed_list: WfTypedList,
+    context: &'l ExecutionContext,
+}
+
+impl<'l> Iterator for WfTypedListCheckedIterator<'l> {
+    type Item = Result<WfData, EvalError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.typed_list.is_empty() {
+            None
+        } else {
+            let element = self
+                .typed_list
+                .inner
+                .entries
+                .get(self.typed_list.start_position)
+                .unwrap()
+                .clone();
+            self.typed_list.start_position += 1;
+            self.typed_list.switch_to_next_entry_group_as_needed();
+            let element = match element.evaluate(self.context) {
+                Ok(v) => v,
+                Err((e, _)) => return Some(Err(e)),
+            };
+            match element.check_type_compatibility(
+                match (&*self.typed_list.inner_type).clone() {
+                    MaybeEvaluated::Valid(v) => v.clone(),
+                    MaybeEvaluated::Unchecked(_) => todo!(), // I think this should be unreacheable. Should it?
+                },
+                self.context,
+            ) {
+                Ok(()) => (),
+                Err(e) => return Some(Err(e)),
+            };
+            Some(Ok(element))
         }
     }
 }

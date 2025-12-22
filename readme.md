@@ -8,18 +8,23 @@ This version use what I think is called... forward evaluation? Basically, it rec
 
 - [x] parse XML dump
   - [ ] pre-process data such as, for example, Boolean are already stored as boolan and do not need conversion in the global context
-- [ ] correctly handle case where the identity has been dereferenced (recursive identity reference resolution)
+- [x] correctly handle case where the identity has been dereferenced (recursive identity reference resolution)
+- [ ] able to replay where the error occur to generate more usefull error
+  - [ ] keep all data used for an evaluation stored somewhere in the evaluation context for reference when replaying (just a clone of the RcI)
 - [x] running built-in function (e.g. Z844/boolean equality and Z802/if)
 - [x] running non-built-in function (e.g. Z10237/boolean inequality)
 - [ ] complete type checking:
   - [ ] make sure to check input/output type are correct for function.
-  - [ ] make sure type of elements in list is correct
+  - [x] make sure type of elements in list is correct (done on-the-fly)
   - [ ] make sure to check generic type (non-built-in type) are correct (run validation function too?)
 - [x] running some tests
 - [ ] proper handling of non-built-in type, including equality (making use of identity)
-- [ ] proper handling of typed list
+- [x] proper handling of typed list
 - [ ] proper handling of typed pair
 - [ ] can evaluate all tests without crashes (not necessarelly without error)
+- [ ] fuzzy testing
+  - [ ] make sure it evaluate everything without crash
+  - [ ] make sure replay is always correct
 - longer term stuff
   - [ ] run python/javascript implementation
   - [ ] fetch Wikidata element

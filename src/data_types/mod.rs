@@ -30,7 +30,7 @@ mod wf_function;
 pub use wf_function::{WfFunction, WfFunctionInner};
 
 mod wf_function_call;
-pub use wf_function_call::WfFunctionCall;
+pub use wf_function_call::{WfFunctionCall, WfFunctionCallInner};
 
 mod wf_implementation;
 pub use wf_implementation::{ImplementationByKind, WfImplementation, WfImplementationInner};

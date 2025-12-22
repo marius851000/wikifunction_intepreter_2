@@ -24,15 +24,15 @@ impl Debug for WfReference {
 
 impl WfDataType for WfReference {
     fn get_identity_zid_key(&self) -> Option<KeyIndex> {
-        unreachable!("shouldn’t access a reference directly")
+        unreachable!("shouldn’t access a reference directly (for ref {:?})", self);
     }
 
     fn get_key(&self, _key: KeyIndex) -> Option<WfData> {
-        unreachable!("shouldn’t access a reference directly")
+        unreachable!("shouldn’t access a reference directly (for ref {:?})", self);
     }
 
     fn list_keys(&self) -> Vec<KeyIndex> {
-        unreachable!("shouldn’t access a reference directly")
+        unreachable!("shouldn’t access a reference directly (for ref {:?})", self);
     }
 
     fn should_be_evaluated_before_parsing(&self) -> bool {

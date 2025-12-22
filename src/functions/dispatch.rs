@@ -1,6 +1,8 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, Zid,
-    data_types::{WfBoolean, WfData, WfDataType, WfFunctionCall, WfString, WfTypedList},
+    data_types::{
+        WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, WfString, WfTypedList,
+    },
     functions::{boolean, list, logic, string},
 };
 
@@ -55,6 +57,16 @@ pub fn dispatch_builtins(
             let string1 =
                 WfString::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
             return Ok(string::string_equality(string1, string2).into_wf_data());
+        }
+        889 => {
+            assert_args_count(3, &args_evaluated)?;
+            let equality_function =
+                WfFunction::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            let list2 =
+                WfTypedList::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            let list1 =
+                WfTypedList::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            return list::list_equality(list1, list2, equality_function, context);
         }
         _ => return Err(EvalError::from_kind(EvalErrorKind::NoBuiltin(function_zid))),
     }

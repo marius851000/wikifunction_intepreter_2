@@ -2,7 +2,11 @@ use std::fmt::Debug;
 
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
-    data_types::{WfData, types_def::WfTypeGeneric, util::SubstitutionInfo},
+    data_types::{
+        WfData,
+        types_def::{WfStandardType, WfTypeGeneric},
+        util::SubstitutionInfo,
+    },
 };
 
 pub trait WfDataType: Debug + Clone {
@@ -53,9 +57,16 @@ pub trait WfDataType: Debug + Clone {
 
     /// Check that the value Z1K1 (type) correspond to the type from the provided ZID
     fn check_z1k1(&self, expected_value: Zid, context: &ExecutionContext) -> Result<(), EvalError> {
-        self.get_key_err(keyindex!(1, 1))?
+        match self
+            .get_key_err(keyindex!(1, 1))?
             .check_identity_zid(context, expected_value)
-            .map_err(|(e, _)| e.inside_key(keyindex!(1, 1)))?;
+        {
+            Ok(v) => v,
+            Err((e, data)) => match WfStandardType::parse(data, context) {
+                Ok(_) => return Err(e.inside_key(keyindex!(1, 1))),
+                Err((e2, _)) => return Err(e2.inside_key(keyindex!(1, 1))),
+            },
+        };
         Ok(())
     }
 
