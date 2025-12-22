@@ -162,13 +162,47 @@ impl WfDataType for WfUntyped {
             Ok(this) => Ok(this.get_reference(context)?),
         }
     }
+
     fn substitute_function_arguments<I: super::util::SubstitutionInfo>(
         self,
         info: &I,
         context: &ExecutionContext,
     ) -> Result<WfData, EvalError> {
+        'a: {
+            if let Some(type_value) = self.get_key(keyindex!(1, 1)) {
+                //TODO: not sure this is sound (a.k.a cover all possible cases)...
+                let type_reference_to = match type_value.get_reference(context) {
+                    Ok((v, _)) => v,
+                    Err(_) => break 'a,
+                };
+
+                let to_use = if type_reference_to == zid!(18) {
+                    // argument reference
+                    match self.evaluate(context) {
+                        Ok(v) => v,
+                        Err((e, _)) => return Err(e),
+                    }
+                } else if type_reference_to == zid!(99) {
+                    // quote
+                    match self.evaluate(context) {
+                        Ok(v) => v,
+                        Err((e, _)) => return Err(e),
+                    }
+                } else {
+                    break 'a;
+                };
+
+                return to_use.substitute_function_arguments(info, context);
+            }
+        }
+        //what does need to be evaluated: Z18, Z99
         let mut new_entries = BTreeMap::new();
         for (k, v) in self.entry.iter() {
+            if *k == keyindex!(7, 1) || k.get_k().map(|x| x.get()) == Some(14) {
+                // function call function or implementation
+                new_entries.insert(k.clone(), v.clone());
+                continue;
+            }
             new_entries.insert(
                 k.clone(),
                 v.clone()
