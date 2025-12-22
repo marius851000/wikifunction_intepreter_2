@@ -52,6 +52,8 @@ pub enum EvalErrorKind {
     CantGetHeadOfEmptyList,
     #[error("type does not match")]
     TypeDoesNotMatch,
+    #[error("unimplemented: {0}")]
+    Unimplemented(String),
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }
@@ -84,6 +86,10 @@ impl EvalError {
 
     pub fn missing_key(key: KeyIndex) -> Self {
         Self::from_kind(EvalErrorKind::MissingKey(key))
+    }
+
+    pub fn unimplemented(text: String) -> Self {
+        Self::from_kind(EvalErrorKind::Unimplemented(text))
     }
 
     pub fn get_kind(&self) -> &EvalErrorKind {

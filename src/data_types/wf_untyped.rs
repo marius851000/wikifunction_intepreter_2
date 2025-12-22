@@ -103,7 +103,10 @@ impl WfUntyped {
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
                 }
-                todo!("parsing for {}", type_zid);
+                return Err((
+                    EvalError::unimplemented(format!("parsing for {}", type_zid)),
+                    self,
+                ));
             }
             // ignore the error. A more complete analysis will be done that will itself return an error as appropriate
             Err((_e, z1k1)) => {
