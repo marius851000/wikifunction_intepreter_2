@@ -132,7 +132,7 @@ impl WfFunction {
             Ok(r#impl)
         } else {
             Err(EvalError::from_kind(
-                EvalErrorKind::NoImplementationForFunction,
+                EvalErrorKind::NoImplementationForFunction(self.0.identity),
             ))
         }
     }

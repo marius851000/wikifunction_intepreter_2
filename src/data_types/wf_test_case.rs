@@ -51,7 +51,7 @@ impl WfTestCase {
     pub fn run_test(self, context: &ExecutionContext) -> Result<(), EvalError> {
         let test_result = match self.0.call.clone().evaluate(context) {
             Ok(v) => v,
-            Err((e, _)) => return Err(e),
+            Err((e, _)) => return Err(e.inside_key(keyindex!(20, 2))),
         };
 
         let patched_function_call = match WfFunctionCall::parse_for_test(

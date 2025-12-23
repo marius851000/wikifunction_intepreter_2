@@ -14,6 +14,14 @@ impl WfReference {
     pub fn new(to: Zid) -> Self {
         Self { to }
     }
+
+    pub fn parse(data: WfData, _context: &ExecutionContext) -> Result<Self, (EvalError, WfData)> {
+        if let WfData::WfReference(reference) = data {
+            return Ok(reference);
+        }
+
+        todo!("fully parse reference");
+    }
 }
 
 impl Debug for WfReference {
@@ -51,10 +59,7 @@ impl WfDataType for WfReference {
         match context.get_global().get_object_value(&self.to) {
             Err(e) => Err((e, self)),
             Ok(v) => match v.evaluate(context) {
-                Err((e, _data)) => Err((
-                    e.inside_key(keyindex!(9, 1)).inside_reference_to(self.to),
-                    self,
-                )),
+                Err((e, _data)) => Err((e.inside_reference_to(self.to), self)),
                 Ok(v) => Ok(v),
             },
         }

@@ -20,7 +20,7 @@ fn main() -> anyhow::Result<()> {
 
     let execution_context = ExecutionContext::default_for_global(global_context.clone());
 
-    run_test_case(zid!(10009), &execution_context);
+    run_test_case(zid!(10192), &execution_context);
 
     Ok(())
 }

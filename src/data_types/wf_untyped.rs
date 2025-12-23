@@ -176,14 +176,11 @@ impl WfDataType for WfUntyped {
                     Err(_) => break 'a,
                 };
 
-                let to_use = if type_reference_to == zid!(18) {
-                    // argument reference
-                    match self.evaluate(context) {
-                        Ok(v) => v,
-                        Err((e, _)) => return Err(e),
-                    }
-                } else if type_reference_to == zid!(99) {
-                    // quote
+                let to_use = if type_reference_to == zid!(18)
+                    || type_reference_to == zid!(99)
+                    || type_reference_to == zid!(9)
+                {
+                    // argument reference, quote, reference
                     match self.evaluate(context) {
                         Ok(v) => v,
                         Err((e, _)) => return Err(e),

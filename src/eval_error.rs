@@ -34,8 +34,9 @@ pub enum EvalErrorKind {
     ExpectOnlyOneImplementation,
     #[error("A Z14 should contain one implementation, but none were found")]
     ExpectOneImplementionFoundZero,
-    #[error("No implementation for this function")]
-    NoImplementationForFunction,
+    #[error("No implementation for function {0}")]
+    /// traces point to the function
+    NoImplementationForFunction(Zid),
     #[error("{0} arguments provided, expected {1}")]
     TooManyArguments(usize, usize),
     #[error("Argument reference reference {0}, which does not have the needed K part")]

@@ -217,7 +217,15 @@ impl WfDataType for WfFunctionCall {
                 };
                 Ok(inner)
             }
-            ImplementationByKind::Code(_) => todo!("code composition"),
+            ImplementationByKind::Code(_) => {
+                return Err((
+                    EvalError::unimplemented(format!(
+                        "code implementaiton (for {})",
+                        self.0.function.0.identity
+                    )),
+                    self,
+                ));
+            }
             ImplementationByKind::Builtin(_) => {
                 match dispatch_builtins(self.0.function.0.identity, &self, context) {
                     Ok(v) => Ok(v),
