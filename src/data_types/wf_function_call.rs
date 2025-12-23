@@ -189,6 +189,10 @@ impl WfDataType for WfFunctionCall {
     }
 
     fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+        let _function_recurse_guard = match context.check_can_run_function_and_acquire_guard() {
+            Ok(v) => v,
+            Err(e) => return Err((e, self)),
+        };
         let implementation = match self.pick_implementation(context) {
             Ok(i) => i,
             Err(e) => return Err((e, self)),

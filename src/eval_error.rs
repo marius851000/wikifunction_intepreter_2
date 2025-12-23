@@ -55,6 +55,8 @@ pub enum EvalErrorKind {
     TypeDoesNotMatch,
     #[error("unimplemented: {0}")]
     Unimplemented(String),
+    #[error("recursed too deep, aborting due to risk of stack overflow")]
+    RecursedTooDeep,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }

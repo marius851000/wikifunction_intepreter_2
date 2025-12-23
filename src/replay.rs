@@ -189,7 +189,9 @@ mod tests {
             err.0.get_trace(),
             &vec![
                 TraceEntry::InsideKey(keyindex!(844, 1)),
-                TraceEntry::InsideKey(keyindex!(844, 1))
+                TraceEntry::ProcessingNonCompositionFunction(zid!(844)),
+                TraceEntry::InsideKey(keyindex!(844, 1)),
+                TraceEntry::ProcessingNonCompositionFunction(zid!(844)),
             ]
         );
 
