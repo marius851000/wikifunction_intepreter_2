@@ -67,7 +67,9 @@ pub enum TraceEntry {
     InsideReference(Zid),
     //TODO: find a better way to identity implementation
     /// This should only be used once all the argument had been parsed and substituted (is that kind of stuff even necessary?)
-    InsideFunctionCall(Zid), // zid is the ZID of the function
+    DuringSubstitution(Zid), // zid is the ZID of the function
+    Substituted(Zid),
+    ProcessingNonCompositionFunction(Zid),
     Text(String),
 }
 
@@ -120,10 +122,6 @@ impl EvalError {
 
     pub fn inside_reference_to(self, zid: Zid) -> Self {
         self.trace(TraceEntry::InsideReference(zid))
-    }
-
-    pub fn inside_function_call(self, zid: Zid) -> Self {
-        self.trace(TraceEntry::InsideFunctionCall(zid))
     }
 }
 

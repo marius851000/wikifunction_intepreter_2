@@ -1,27 +1,48 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
-    data_types::{WfData, WfDataType, WfFunction, WfReference},
+    data_types::{
+        FunctionCallOrType, ImplementationByKind, WfData, WfDataType, WfFunction, WfFunctionCall,
+        WfReference, WfTypedList,
+    },
     eval_error::TraceEntry,
 };
 
 #[derive(Debug)]
 pub enum FullTraceEntry {
-    InsideKey(KeyIndex, WfData), // WfData is the result returned by the key
+    // WfData is the result present by the key
+    InsideKey(KeyIndex, WfData),
+    InsideList(usize, WfData),
     FollowReference(Zid, WfData),
+    AfterCompositionSubstitution(Zid, WfData),
+    // just a marker to help debugging.
+    ProcessingNonCompositionFunction(Zid),
 }
 
 impl FullTraceEntry {
     pub fn get_action_text(&self) -> String {
         match self {
             Self::InsideKey(index, _) => format!("inside {}", index),
+            Self::InsideList(pos, _) => format!("inside list, at 0-indexed position {}", pos),
             Self::FollowReference(zid, _) => format!("follow reference to {}", zid),
+            Self::AfterCompositionSubstitution(function_zid, _) => {
+                format!("after substitution for function {}", function_zid)
+            }
+            Self::ProcessingNonCompositionFunction(function_zid) => {
+                format!(
+                    "Inside non-composition implementation for function {}",
+                    function_zid
+                )
+            }
         }
     }
 
-    pub fn get_result(&self) -> &WfData {
+    pub fn get_result(&self) -> Option<&WfData> {
         match self {
-            Self::InsideKey(_, d) => d,
-            Self::FollowReference(_, d) => d,
+            Self::InsideKey(_, d) => Some(d),
+            Self::InsideList(_, d) => Some(d),
+            Self::FollowReference(_, d) => Some(d),
+            Self::AfterCompositionSubstitution(_, d) => Some(d),
+            Self::ProcessingNonCompositionFunction(_) => None,
         }
     }
 }
@@ -58,10 +79,16 @@ pub fn generate_replay(
     let mut iterator = error.get_trace().iter().rev();
     // will iterate from higher level to lower level
     while let Some(step) = iterator.next() {
+        //println!("{:?}: {:?}", step, current);
         match step {
             TraceEntry::InsideKey(key) => {
                 current = current.get_key(*key).unwrap();
                 full_trace.push(FullTraceEntry::InsideKey(*key, current.clone()))
+            }
+            TraceEntry::InsideList(pos) => {
+                let list = WfTypedList::parse(current, context).unwrap();
+                current = list.iter().skip(*pos).next().unwrap();
+                full_trace.push(FullTraceEntry::InsideList(*pos, current.clone()))
             }
             TraceEntry::InsideReference(target_value) => {
                 let reference = WfReference::parse(current, context).unwrap();
@@ -75,7 +102,31 @@ pub fn generate_replay(
                     current.clone(),
                 ));
             }
-            _ => todo!(),
+            TraceEntry::ProcessingNonCompositionFunction(function_zid) => full_trace.push(
+                FullTraceEntry::ProcessingNonCompositionFunction(*function_zid),
+            ),
+            TraceEntry::Substituted(function_zid) => {
+                let function_call = match WfFunctionCall::parse(current, context).unwrap() {
+                    FunctionCallOrType::FunctionCall(f) => f,
+                    FunctionCallOrType::Type(_) => panic!(),
+                };
+                assert_eq!(*function_zid, function_call.0.function.0.identity);
+                let implementation = function_call.pick_implementation(context).unwrap();
+                let composition = match &implementation.0.r#impl {
+                    ImplementationByKind::Composition(composition) => composition,
+                    _ => panic!(),
+                };
+                let propagated = composition
+                    .clone()
+                    .substitute_function_arguments(&function_call, context)
+                    .unwrap();
+                current = propagated;
+                full_trace.push(FullTraceEntry::AfterCompositionSubstitution(
+                    *function_zid,
+                    current.clone(),
+                ));
+            }
+            _ => todo!("replay for {:?}", step),
         }
     }
 

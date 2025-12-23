@@ -16,6 +16,8 @@ fn assert_args_count(expected_size: usize, list: &Vec<WfData>) -> Result<(), Eva
         )));
     }
 }
+
+///NOTE: branches should evaluate their output as appropriate
 pub fn dispatch_builtins(
     function_zid: Zid,
     call: &WfFunctionCall,
@@ -39,12 +41,13 @@ pub fn dispatch_builtins(
             let r#then = args_evaluated.pop().unwrap();
             let boolean =
                 WfBoolean::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
-            return Ok(logic::if_function(boolean, r#then, r#else));
+            return logic::if_function(boolean, r#then, r#else, context);
         }
         811 => {
             assert_args_count(1, &args_evaluated)?;
             let list1 =
                 WfTypedList::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            //is evaluation needed? no it isn’t.
             return list::first_element(list1, context);
         }
         844 => {
@@ -65,12 +68,12 @@ pub fn dispatch_builtins(
         }
         889 => {
             assert_args_count(3, &args_evaluated)?;
-            let equality_function =
-                WfFunction::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
-            let list2 =
-                WfTypedList::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
-            let list1 =
-                WfTypedList::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
+            let equality_function = WfFunction::parse(args_evaluated.pop().unwrap(), context)
+                .map_err(|(e, _)| e.inside_key(keyindex!(889, 3)))?;
+            let list2 = WfTypedList::parse(args_evaluated.pop().unwrap(), context)
+                .map_err(|(e, _)| e.inside_key(keyindex!(889, 2)))?;
+            let list1 = WfTypedList::parse(args_evaluated.pop().unwrap(), context)
+                .map_err(|(e, _)| e.inside_key(keyindex!(889, 1)))?;
             return list::list_equality(list1, list2, equality_function, context);
         }
         _ => return Err(EvalError::from_kind(EvalErrorKind::NoBuiltin(function_zid))),

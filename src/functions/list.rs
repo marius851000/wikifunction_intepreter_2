@@ -20,16 +20,22 @@ pub fn list_equality(
     if list1.len() != list2.len() {
         return Ok(WfBoolean::new(false).into_wf_data());
     };
-    for (ele1, ele2) in list1.iter_checked(context).zip(list2.iter_checked(context)) {
+    for (pos, (ele1, ele2)) in list1
+        .iter_checked(context)
+        .zip(list2.iter_checked(context))
+        .enumerate()
+    {
         // they have been evaluated already as part as the iter_checked
         //TODO: still evaluate them in case this change in the future
-        let ele1 = ele1?;
-        let ele2 = ele2?;
+        let ele1 = ele1.map_err(|e| e.inside_list(pos).inside_key(keyindex!(889, 1)))?;
+        let ele2 = ele2.map_err(|e| e.inside_list(pos).inside_key(keyindex!(889, 2)))?;
 
         let function_call = WfFunctionCall(RcI::new(WfFunctionCallInner {
             function: equality_function.clone(),
             args: vec![ele1, ele2],
         }));
+
+        //TODO: trace
         let evaluated = function_call.evaluate(context).map_err(|(e, _)| e)?;
         let as_boolean = WfBoolean::parse(evaluated, context).map_err(|(e, _)| e)?;
         if !as_boolean.value {

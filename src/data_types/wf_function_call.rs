@@ -1,10 +1,11 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, RcI,
     data_types::{
-        ImplementationByKind, WfData, WfDataType, WfFunction,
+        ImplementationByKind, WfData, WfDataType, WfFunction, WfImplementation,
         types_def::{WfTypeGeneric, WfTypedListType},
         util::SubstitutionInfo,
     },
+    eval_error::TraceEntry,
     functions::dispatch_builtins,
 };
 
@@ -131,6 +132,16 @@ impl WfFunctionCall {
             WfFunctionCallInner { function, args },
         ))))
     }
+
+    pub fn pick_implementation(
+        &self,
+        context: &ExecutionContext,
+    ) -> Result<WfImplementation, EvalError> {
+        self.0
+            .function
+            .get_preffered_implementation(context)
+            .map_err(|e| e.inside_key(keyindex!(7, 1)))
+    }
 }
 
 impl WfDataType for WfFunctionCall {
@@ -178,12 +189,7 @@ impl WfDataType for WfFunctionCall {
     }
 
     fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
-        let implementation = match self
-            .0
-            .function
-            .get_preffered_implementation(context)
-            .map_err(|e| e.inside_key(keyindex!(7, 1)))
-        {
+        let implementation = match self.pick_implementation(context) {
             Ok(i) => i,
             Err(e) => return Err((e, self)),
         };
@@ -195,10 +201,7 @@ impl WfDataType for WfFunctionCall {
                         Ok(v) => v,
                         Err(e) => {
                             return Err((
-                                e.inside_function_call(
-                                    self.0.function.0.identity,
-                                    //implementation.0.r#impl.clone(),
-                                ),
+                                e.trace(TraceEntry::DuringSubstitution(self.0.function.0.identity)),
                                 self,
                             ));
                         }
@@ -207,10 +210,7 @@ impl WfDataType for WfFunctionCall {
                     Ok(v) => v,
                     Err((e, _)) => {
                         return Err((
-                            e.inside_function_call(
-                                self.0.function.0.identity,
-                                //implementation.0.r#impl.clone(),
-                            ),
+                            e.trace(TraceEntry::Substituted(self.0.function.0.identity)),
                             self,
                         ));
                     }
@@ -229,7 +229,12 @@ impl WfDataType for WfFunctionCall {
             ImplementationByKind::Builtin(_) => {
                 match dispatch_builtins(self.0.function.0.identity, &self, context) {
                     Ok(v) => Ok(v),
-                    Err(e) => Err((e, self)),
+                    Err(e) => Err((
+                        e.trace(TraceEntry::ProcessingNonCompositionFunction(
+                            self.0.function.0.identity,
+                        )),
+                        self,
+                    )),
                 }
             }
         }
