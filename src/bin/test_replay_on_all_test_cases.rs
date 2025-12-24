@@ -13,7 +13,7 @@ fn main() {
     let execution_context = ExecutionContext::default_for_global(global_context.clone());
 
     for (key, entry) in execution_context.get_global().objects.iter() {
-        if key.get_z().get() > 10190 {
+        if key.get_z().get() > 20000 {
             break; // I have some issue with Z10192 where it recursively call the list_equality function, and that’s not the tested behavior. I’ll care about once I have better tracing.
         }
         let test_case = match WfTestCase::parse(entry.clone(), &execution_context) {

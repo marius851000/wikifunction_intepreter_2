@@ -1,8 +1,10 @@
+use std::result;
+
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
     data_types::{
         FunctionCallOrType, ImplementationByKind, WfData, WfDataType, WfFunction, WfFunctionCall,
-        WfReference, WfTypedList,
+        WfReference, WfTestCase, WfTypedList,
     },
     eval_error::TraceEntry,
 };
@@ -16,6 +18,8 @@ pub enum FullTraceEntry {
     AfterCompositionSubstitution(Zid, WfData),
     // just a marker to help debugging.
     ProcessingNonCompositionFunction(Zid),
+    // first WfData is the result, second is the generated function call
+    CheckingTestCaseResult(WfData, WfData),
 }
 
 impl FullTraceEntry {
@@ -33,6 +37,9 @@ impl FullTraceEntry {
                     function_zid
                 )
             }
+            Self::CheckingTestCaseResult(result, _) => {
+                format!("Checking result with validator (result is {:?})", result)
+            }
         }
     }
 
@@ -43,6 +50,7 @@ impl FullTraceEntry {
             Self::FollowReference(_, d) => Some(d),
             Self::AfterCompositionSubstitution(_, d) => Some(d),
             Self::ProcessingNonCompositionFunction(_) => None,
+            Self::CheckingTestCaseResult(_, d) => Some(d),
         }
     }
 }
@@ -123,6 +131,17 @@ pub fn generate_replay(
                 current = propagated;
                 full_trace.push(FullTraceEntry::AfterCompositionSubstitution(
                     *function_zid,
+                    current.clone(),
+                ));
+            }
+            TraceEntry::CheckingTestCaseResult(result) => {
+                let test_case = WfTestCase::parse(current, context).unwrap();
+                current = test_case
+                    .get_validation_function_call_with_patched_first_input(result.clone(), context)
+                    .unwrap()
+                    .into_wf_data();
+                full_trace.push(FullTraceEntry::CheckingTestCaseResult(
+                    result.clone(),
                     current.clone(),
                 ));
             }

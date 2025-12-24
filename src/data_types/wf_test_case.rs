@@ -4,13 +4,14 @@ use crate::{
         WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, util::SubstitutionInfo,
         wf_function_call::FunctionCallOrType,
     },
+    eval_error::TraceEntry,
 };
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct WfTestCaseInner {
-    function: WfFunction,
-    call: WfData,
-    validation: WfData,
+    pub function: WfFunction,
+    pub call: WfData,
+    pub validation: WfData,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -48,29 +49,36 @@ impl WfTestCase {
         })))
     }
 
-    pub fn run_test(self, context: &ExecutionContext) -> Result<(), EvalError> {
-        let test_result = match self.0.call.clone().evaluate(context) {
-            Ok(v) => v,
-            Err((e, _)) => return Err(e.inside_key(keyindex!(20, 2))),
-        };
-
-        let patched_function_call = match WfFunctionCall::parse_for_test(
-            self.0.validation.clone(),
-            context,
-            test_result.clone(),
-        ) {
-            Ok(FunctionCallOrType::FunctionCall(c)) => c,
+    pub fn get_validation_function_call_with_patched_first_input(
+        self,
+        first_input: WfData,
+        context: &ExecutionContext,
+    ) -> Result<WfFunctionCall, EvalError> {
+        match WfFunctionCall::parse_for_test(self.0.validation.clone(), context, first_input) {
+            Ok(FunctionCallOrType::FunctionCall(c)) => Ok(c),
             Ok(FunctionCallOrType::Type(_type)) => {
                 return Err(EvalError::from_kind(
                     EvalErrorKind::ExpectedFunctionCallGotType,
                 ));
             } //TODO: trace
             Err((e, _)) => return Err(e),
+        }
+    }
+
+    pub fn run_test(self, context: &ExecutionContext) -> Result<(), EvalError> {
+        let test_result = match self.0.call.clone().evaluate(context) {
+            Ok(v) => v,
+            Err((e, _)) => return Err(e.inside_key(keyindex!(20, 2))),
         };
+
+        let patched_function_call = self
+            .get_validation_function_call_with_patched_first_input(test_result.clone(), context)?;
 
         let boolean_result_unparsed = match patched_function_call.evaluate(context) {
             Ok(result) => result,
-            Err((e, _)) => return Err(e), //TODO: trace
+            Err((e, _)) => {
+                return Err(e.trace(TraceEntry::CheckingTestCaseResult(test_result.clone())));
+            }
         };
 
         let boolean_result = match WfBoolean::parse(boolean_result_unparsed, context) {

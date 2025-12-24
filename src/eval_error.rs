@@ -67,6 +67,8 @@ pub enum TraceEntry {
     InsideKey(KeyIndex),
     InsideList(usize), // position is starting from 0 for the first element of the list (which exclude the argument paramater)
     InsideReference(Zid),
+    CheckingTestCaseResult(WfData),
+    ConvertingTestCaseValidatorResultToBoolean(WfData),
     //TODO: find a better way to identity implementation
     /// This should only be used once all the argument had been parsed and substituted (is that kind of stuff even necessary?)
     DuringSubstitution(Zid), // zid is the ZID of the function
