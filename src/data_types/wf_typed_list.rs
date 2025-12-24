@@ -49,7 +49,12 @@ impl WfTypedList {
             WfData::WfTypedList(d) => return Ok(d),
             _ => (),
         };
-        todo!("parsing list from keys from {:?}", data);
+
+        return Err((
+            DuringSubstitution(Zid(14726)): WfUntyped(WfUntyped { entry: {Z1K1: WfReference(WfReference(Z7)), Z7K1: WfReference(WfReference(Z14726)), Z14726K1: WfUntyped(WfUntyped { entry: {Z1K1: WfReference(WfReference(Z13518)), Z13518K1: WfString(WfString { text: "9" })} })} })
+    EvalError::unimplemented("parsing typed list from key".to_string()),
+            data,
+        ));
     }
 
     pub fn len(&self) -> usize {

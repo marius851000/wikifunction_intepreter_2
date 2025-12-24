@@ -74,6 +74,7 @@ pub enum TraceEntry {
     DuringSubstitution(Zid), // zid is the ZID of the function
     Substituted(Zid),
     ProcessingNonCompositionFunction(Zid),
+    ProcessingReconstructedData(WfData),
     Text(String),
 }
 

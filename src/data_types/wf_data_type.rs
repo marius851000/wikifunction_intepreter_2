@@ -63,7 +63,7 @@ pub trait WfDataType: Debug + Clone {
         {
             Ok(v) => v,
             Err((e, data)) => match WfStandardType::parse(data, context) {
-                Ok(_) => return Err(e.inside_key(keyindex!(1, 1))),
+                Ok(_) => return Err(e),
                 Err((e2, _)) => return Err(e2.inside_key(keyindex!(1, 1))),
             },
         };

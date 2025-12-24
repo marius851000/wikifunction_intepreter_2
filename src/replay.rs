@@ -20,6 +20,8 @@ pub enum FullTraceEntry {
     ProcessingNonCompositionFunction(Zid),
     // first WfData is the result, second is the generated function call
     CheckingTestCaseResult(WfData, WfData),
+    UsingReconstructedData(WfData),
+    DuringSubstitution(Zid, WfData),
 }
 
 impl FullTraceEntry {
@@ -40,6 +42,10 @@ impl FullTraceEntry {
             Self::CheckingTestCaseResult(result, _) => {
                 format!("Checking result with validator (result is {:?})", result)
             }
+            Self::UsingReconstructedData(_) => {
+                format!("Using data generated on-the-fly")
+            }
+            Self::DuringSubstitution(zid, _) => format!("Doing subsitution for function {}", zid),
         }
     }
 
@@ -51,6 +57,8 @@ impl FullTraceEntry {
             Self::AfterCompositionSubstitution(_, d) => Some(d),
             Self::ProcessingNonCompositionFunction(_) => None,
             Self::CheckingTestCaseResult(_, d) => Some(d),
+            Self::UsingReconstructedData(d) => Some(d),
+            Self::DuringSubstitution(_, d) => Some(d),
         }
     }
 }
@@ -83,6 +91,7 @@ pub fn generate_replay(
 ) -> ReplayResult {
     let mut current = input;
     let mut full_trace = Vec::new();
+    let mut ongoing_substitution = None;
 
     let mut iterator = error.get_trace().iter().rev();
     // will iterate from higher level to lower level
@@ -145,25 +154,53 @@ pub fn generate_replay(
                     current.clone(),
                 ));
             }
+            TraceEntry::ProcessingReconstructedData(new_data) => {
+                current = new_data.clone();
+                full_trace.push(FullTraceEntry::UsingReconstructedData(new_data.clone()));
+            }
+            TraceEntry::DuringSubstitution(function_zid) => {
+                let function_call = match WfFunctionCall::parse(current, context).unwrap() {
+                    FunctionCallOrType::FunctionCall(f) => f,
+                    FunctionCallOrType::Type(_) => panic!(),
+                };
+                assert_eq!(*function_zid, function_call.0.function.0.identity);
+                let implementation = function_call.pick_implementation(context).unwrap();
+                let composition = match &implementation.0.r#impl {
+                    ImplementationByKind::Composition(composition) => composition,
+                    _ => panic!(),
+                };
+                current = composition.clone();
+                assert_eq!(ongoing_substitution, None);
+                ongoing_substitution = Some(function_zid);
+                full_trace.push(FullTraceEntry::DuringSubstitution(
+                    *function_zid,
+                    current.clone(),
+                ));
+            }
             _ => todo!("replay for {:?}", step),
         }
     }
 
     //NOTE: this is just for debug. Might be turned off eventually.
-    match error.get_kind() {
-        EvalErrorKind::NoImplementationForFunction(function_zid) => {
-            assert_eq!(
-                WfFunction::parse(current.clone().evaluate(context).unwrap(), context)
-                    .unwrap()
-                    .get_preffered_implementation(context)
-                    .unwrap_err()
-                    .get_kind(),
-                &EvalErrorKind::NoImplementationForFunction(*function_zid)
-            );
-        }
-        _ => {
-            let _ = current.clone().evaluate(context).unwrap_err();
-        }
+    if ongoing_substitution.is_none() {
+        match error.get_kind() {
+            EvalErrorKind::NoImplementationForFunction(function_zid) => {
+                assert_eq!(
+                    WfFunction::parse(current.clone().evaluate(context).unwrap(), context)
+                        .unwrap()
+                        .get_preffered_implementation(context)
+                        .unwrap_err()
+                        .get_kind(),
+                    &EvalErrorKind::NoImplementationForFunction(*function_zid)
+                );
+            }
+            EvalErrorKind::TestCaseFailedWithFalse(_) => (),
+            EvalErrorKind::Unimplemented(_) => (),
+            EvalErrorKind::WrongType(_expected, _got) => (),
+            _ => {
+                let _ = current.clone().evaluate(context).unwrap_err();
+            }
+        };
     };
 
     return ReplayResult {

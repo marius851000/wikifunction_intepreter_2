@@ -132,10 +132,6 @@ impl WfDataType for WfTestCase {
         WfData::WfTestCase(self)
     }
 
-    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
-        todo!("evaluate the function (but not the call and validator)");
-    }
-
     fn substitute_function_arguments<I: SubstitutionInfo>(
         self,
         info: &I,

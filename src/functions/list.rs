@@ -1,8 +1,9 @@
 use crate::{
-    EvalError, ExecutionContext, RcI,
+    EvalError, EvalErrorKind, ExecutionContext, RcI,
     data_types::{
         WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, WfFunctionCallInner, WfTypedList,
     },
+    eval_error::TraceEntry,
 };
 
 pub fn first_element(list: WfTypedList, context: &ExecutionContext) -> Result<WfData, EvalError> {
@@ -36,8 +37,12 @@ pub fn list_equality(
         }));
 
         //TODO: trace
-        let evaluated = function_call.evaluate(context).map_err(|(e, _)| e)?;
-        let as_boolean = WfBoolean::parse(evaluated, context).map_err(|(e, _)| e)?;
+        let evaluated = function_call.clone().evaluate(context).map_err(|(e, _)| {
+            e.trace(TraceEntry::ProcessingReconstructedData(
+                function_call.into_wf_data(),
+            ))
+        })?;
+        let as_boolean = WfBoolean::parse(evaluated, context).map_err(|(e, _)| todo!())?;
         if !as_boolean.value {
             return Ok(WfBoolean::new(false).into_wf_data());
         }
