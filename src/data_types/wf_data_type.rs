@@ -35,6 +35,13 @@ pub trait WfDataType: Debug + Clone {
         Ok(self.into_wf_data())
     }
 
+    /*/// like evaluate, but non-recursive.
+    /// the Ok boolean is true if further evaluation needs to be done, false if evaluation won’t result in any further transformation.
+    ///
+    /// implemations may still do recursion if needed (such as evaluating the boolean of an if function)
+    //TODO: fn evaluate_one_step(self, _context: &ExecutionContext) -> Result<(WfData, bool), (EvalError, Self)>;
+     */
+
     /// This only return this reference, not recursive reference
     fn get_reference(
         self,

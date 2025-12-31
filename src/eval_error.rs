@@ -57,6 +57,8 @@ pub enum EvalErrorKind {
     Unimplemented(String),
     #[error("recursed too deep, aborting due to risk of stack overflow")]
     RecursedTooDeep,
+    #[error("Too much function call were called")]
+    FunctionCallCountExceeded,
     #[error("This explictly invalid data shouldn’t be reached outside of unit test")]
     TestData,
 }
