@@ -112,7 +112,7 @@ impl WfFunction {
         let mut best_code_implementation = None;
 
         for implementation in implementations.into_iter() {
-            //TODO: better implementation choice
+            //TODO: better implementation choice. Idea: just pick the first that isn’t code (as it is currently unsupported.)
             match implementation.0.r#impl {
                 ImplementationByKind::Composition(_) => {
                     best_composition_implementation = Some(implementation)

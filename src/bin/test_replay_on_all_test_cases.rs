@@ -6,6 +6,7 @@ use interpreter2::{
 use std::{fs::File, io::BufReader};
 
 fn main() {
+    println!("{:?}", std::env::current_dir().unwrap());
     let file =
         BufReader::new(File::open("./wikifunctionswiki-20251201-pages-meta-current.xml").unwrap());
     let global_context = RcI::new(GlobalContext::from_wikifunction_dump(file).unwrap());

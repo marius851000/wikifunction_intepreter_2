@@ -267,7 +267,7 @@ macro_rules! impl_wf_data_type {
 
             fn should_be_evaluated_before_parsing(&self) -> bool {
                 match self {
-                    $(Self::$variant($inner) => $inner.is_fully_realised(),)+
+                    $(Self::$variant($inner) => $inner.should_be_evaluated_before_parsing(),)+
                 }
             }
 

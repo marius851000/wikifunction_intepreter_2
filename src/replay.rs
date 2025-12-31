@@ -72,12 +72,11 @@ pub struct ReplayResult {
 impl ReplayResult {
     pub fn pretty_trace(&self) -> String {
         let mut result = String::new();
+        //TODO: printing the debug data will sometimes try to print way too much (and make the program crash). Find a way to avoid that, such as with a bounded to_zobject_json_notation which allow a bounded size.
         for entry in &self.full_trace {
-            result.extend(
-                format!("{} -> {:?}\n", entry.get_action_text(), entry.get_result()).chars(),
-            );
+            result.push_str(&format!("{} -> ...\n", entry.get_action_text()));
         }
-        result.extend(format!("root error data structure:\n{:?}\n", self.root).chars());
+        //result.push_str(&format!("root error data structure:\n{:?}\n", self.root));
         result
     }
 }
