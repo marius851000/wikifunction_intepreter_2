@@ -1,5 +1,3 @@
-use std::result;
-
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
     data_types::{

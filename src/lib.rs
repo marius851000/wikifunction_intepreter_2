@@ -11,7 +11,7 @@ pub use zid::{Zid, ZidParseError};
 pub mod data_types;
 
 mod eval_error;
-pub use eval_error::{EvalError, EvalErrorKind};
+pub use eval_error::{EvalError, EvalErrorKind, TraceEntry};
 
 mod execution_context;
 pub use execution_context::ExecutionContext;

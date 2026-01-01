@@ -7,6 +7,7 @@ use crate::{
     },
     eval_error::TraceEntry,
     functions::dispatch_builtins,
+    util::MaybeVec,
 };
 
 #[derive(Debug)]
@@ -188,7 +189,10 @@ impl WfDataType for WfFunctionCall {
         false
     }
 
-    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+    fn evaluate_one_step(
+        self,
+        context: &ExecutionContext,
+    ) -> Result<(WfData, bool, MaybeVec<TraceEntry>), (EvalError, Self)> {
         let _function_recurse_guard = match context.check_can_run_function_and_acquire_guard() {
             Ok(v) => v,
             Err(e) => return Err((e, self)),
@@ -210,16 +214,11 @@ impl WfDataType for WfFunctionCall {
                             ));
                         }
                     };
-                let inner = match inner_substituted.evaluate(context) {
-                    Ok(v) => v,
-                    Err((e, _)) => {
-                        return Err((
-                            e.trace(TraceEntry::Substituted(self.0.function.0.identity)),
-                            self,
-                        ));
-                    }
-                };
-                Ok(inner)
+                Ok((
+                    inner_substituted,
+                    true,
+                    MaybeVec::One(TraceEntry::Substituted(self.0.function.0.identity)),
+                ))
             }
             ImplementationByKind::Code(_) => {
                 return Err((

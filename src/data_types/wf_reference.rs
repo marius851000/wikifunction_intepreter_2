@@ -3,6 +3,8 @@ use std::fmt::Debug;
 use crate::{
     EvalError, ExecutionContext, KeyIndex, Zid,
     data_types::{WfData, WfDataType},
+    eval_error::TraceEntry,
+    util::MaybeVec,
 };
 
 #[derive(Clone, PartialEq)]
@@ -55,13 +57,13 @@ impl WfDataType for WfReference {
         WfData::WfReference(self)
     }
 
-    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+    fn evaluate_one_step(
+        self,
+        context: &ExecutionContext,
+    ) -> Result<(WfData, bool, MaybeVec<TraceEntry>), (EvalError, Self)> {
         match context.get_global().get_object_value(&self.to) {
             Err(e) => Err((e, self)),
-            Ok(v) => match v.evaluate(context) {
-                Err((e, _data)) => Err((e.inside_reference_to(self.to), self)),
-                Ok(v) => Ok(v),
-            },
+            Ok(v) => Ok((v, true, MaybeVec::One(TraceEntry::InsideReference(self.to)))),
         }
     }
 

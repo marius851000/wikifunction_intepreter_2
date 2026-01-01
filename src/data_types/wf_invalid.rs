@@ -1,6 +1,8 @@
 use crate::{
     EvalError, EvalErrorKind, ExecutionContext, KeyIndex,
     data_types::{WfData, WfDataType},
+    eval_error::TraceEntry,
+    util::MaybeVec,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -35,7 +37,10 @@ impl WfDataType for WfInvalid {
         true
     }
 
-    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+    fn evaluate_one_step(
+        self,
+        _context: &ExecutionContext,
+    ) -> Result<(WfData, bool, MaybeVec<TraceEntry>), (EvalError, Self)> {
         return Err((EvalError::from_kind(self.reason.clone()), self));
     }
 

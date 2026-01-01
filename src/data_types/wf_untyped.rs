@@ -8,6 +8,8 @@ use crate::{
         types_def::{WfStandardType, WfTypeGeneric},
         wf_function_call::FunctionCallOrType,
     },
+    eval_error::TraceEntry,
+    util::MaybeVec,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -36,13 +38,33 @@ impl WfUntyped {
             entry: RcI::new(result),
         }
     }
+}
 
-    /// If recurse is false, this function will not evaluate function call, reference and co
-    fn evaluate_inner(
+impl WfDataType for WfUntyped {
+    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
+        todo!("identity for Untyped? Is that even possible without consumption?")
+    }
+
+    fn get_key(&self, key: KeyIndex) -> Option<WfData> {
+        self.entry.get(&key).cloned()
+    }
+
+    fn list_keys(&self) -> Vec<KeyIndex> {
+        self.entry.keys().copied().collect()
+    }
+
+    fn is_fully_realised(&self) -> bool {
+        false
+    }
+
+    fn into_wf_data(self) -> WfData {
+        WfData::WfUntyped(self)
+    }
+
+    fn evaluate_one_step(
         self,
         context: &ExecutionContext,
-        recurse: bool,
-    ) -> Result<WfData, (EvalError, Self)> {
+    ) -> Result<(WfData, bool, MaybeVec<TraceEntry>), (EvalError, Self)> {
         let z1k1 = match self.entry.get(&keyindex!(1, 1)) {
             Some(z1k1) => z1k1.clone(),
             _ => return Err((EvalError::missing_key(keyindex!(1, 1)), self)),
@@ -51,7 +73,7 @@ impl WfUntyped {
             Ok((type_zid, _z1k1)) => {
                 if type_zid == zid!(4) {
                     match WfStandardType::parse(self.into_wf_data(), context) {
-                        Ok(v) => return Ok(v.into_wf_data()),
+                        Ok(v) => return Ok((v.into_wf_data(), true, MaybeVec::default())),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
                 }
@@ -63,29 +85,24 @@ impl WfUntyped {
                     };
                     let function_call = match fc_or_type {
                         FunctionCallOrType::FunctionCall(f) => f,
-                        FunctionCallOrType::Type(t) => return Ok(t.into_wf_data()),
+                        FunctionCallOrType::Type(t) => {
+                            return Ok((t.into_wf_data(), true, MaybeVec::default()));
+                        }
                     };
-                    if !recurse {
-                        return Ok(function_call.into_wf_data());
-                    }
-
-                    match function_call.evaluate(context) {
-                        Ok(v) => return Ok(v),
-                        Err((e, data)) => return Err((e, WfUntyped::parse(data.into_wf_data()))),
-                    }
+                    return Ok((function_call.into_wf_data(), true, MaybeVec::default()));
                 } else if type_zid == zid!(8) {
                     match WfFunction::parse(self.into_wf_data(), context) {
-                        Ok(v) => return Ok(v.into_wf_data()),
+                        Ok(v) => return Ok((v.into_wf_data(), false, MaybeVec::default())),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
                 } else if type_zid == zid!(14) {
                     match WfImplementation::parse(self.into_wf_data(), context) {
-                        Ok(v) => return Ok(v.into_wf_data()),
+                        Ok(v) => return Ok((v.into_wf_data(), false, MaybeVec::default())),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
                 } else if type_zid == zid!(18) {
                     match WfArgumentReference::parse(self.into_wf_data(), context) {
-                        Ok(v) => return Ok(v.into_wf_data()),
+                        Ok(v) => return Ok((v.into_wf_data(), false, MaybeVec::default())),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
                 } else if type_zid == zid!(20) {
@@ -94,12 +111,12 @@ impl WfUntyped {
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     };
                     match test_case.evaluate(context) {
-                        Ok(v) => return Ok(v),
+                        Ok(v) => return Ok((v, false, MaybeVec::default())),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data.into_wf_data()))),
                     };
                 } else if type_zid == zid!(40) {
                     match WfBoolean::parse(self.into_wf_data(), context) {
-                        Ok(v) => return Ok(v.into_wf_data()),
+                        Ok(v) => return Ok((v.into_wf_data(), false, MaybeVec::default())),
                         Err((e, data)) => return Err((e, WfUntyped::parse(data))),
                     }
                 }
@@ -126,40 +143,14 @@ impl WfUntyped {
             }
         }
     }
-}
-
-impl WfDataType for WfUntyped {
-    fn get_identity_zid_key(&self) -> Option<KeyIndex> {
-        todo!("identity for Untyped? Is that even possible without consumption?")
-    }
-
-    fn get_key(&self, key: KeyIndex) -> Option<WfData> {
-        self.entry.get(&key).cloned()
-    }
-
-    fn list_keys(&self) -> Vec<KeyIndex> {
-        self.entry.keys().copied().collect()
-    }
-
-    fn is_fully_realised(&self) -> bool {
-        false
-    }
-
-    fn into_wf_data(self) -> WfData {
-        WfData::WfUntyped(self)
-    }
-
-    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
-        self.evaluate_inner(context, true)
-    }
 
     fn get_reference(
         self,
         context: &ExecutionContext,
     ) -> Result<(Zid, WfData), (EvalError, WfData)> {
-        match self.evaluate_inner(context, false) {
+        match self.evaluate_one_step(context) {
             Err((e, this)) => return Err((e, this.into_wf_data())),
-            Ok(this) => Ok(this.get_reference(context)?),
+            Ok(this) => Ok(this.0.get_reference(context)?),
         }
     }
 

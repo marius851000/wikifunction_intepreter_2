@@ -1,14 +1,18 @@
 use crate::{
-    EvalError, EvalErrorKind, ExecutionContext, RcI,
+    EvalError, ExecutionContext, RcI,
     data_types::{
         WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, WfFunctionCallInner, WfTypedList,
     },
     eval_error::TraceEntry,
+    util::MaybeVec,
 };
 
-pub fn first_element(list: WfTypedList, context: &ExecutionContext) -> Result<WfData, EvalError> {
+pub fn first_element(
+    list: WfTypedList,
+    context: &ExecutionContext,
+) -> Result<(WfData, bool, MaybeVec<TraceEntry>), EvalError> {
     list.split_first_element(Some(context))
-        .map(|(x, _)| x)
+        .map(|(x, _)| (x, true, MaybeVec::One(TraceEntry::InsideList(0))))
         .map_err(|(e, _)| e)
 }
 
@@ -17,9 +21,9 @@ pub fn list_equality(
     list2: WfTypedList,
     equality_function: WfFunction,
     context: &ExecutionContext,
-) -> Result<WfData, EvalError> {
+) -> Result<WfBoolean, EvalError> {
     if list1.len() != list2.len() {
-        return Ok(WfBoolean::new(false).into_wf_data());
+        return Ok(WfBoolean::new(false));
     };
     for (pos, (ele1, ele2)) in list1
         .iter_checked(context)
@@ -44,9 +48,9 @@ pub fn list_equality(
         })?;
         let as_boolean = WfBoolean::parse(evaluated, context).map_err(|(e, _)| todo!())?;
         if !as_boolean.value {
-            return Ok(WfBoolean::new(false).into_wf_data());
+            return Ok(WfBoolean::new(false));
         }
     }
 
-    Ok(WfBoolean::new(true).into_wf_data())
+    Ok(WfBoolean::new(true))
 }

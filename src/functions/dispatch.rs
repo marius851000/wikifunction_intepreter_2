@@ -3,7 +3,9 @@ use crate::{
     data_types::{
         WfBoolean, WfData, WfDataType, WfFunction, WfFunctionCall, WfString, WfTypedList,
     },
+    eval_error::TraceEntry,
     functions::{boolean, list, logic, string},
+    util::MaybeVec,
 };
 
 fn assert_args_count(expected_size: usize, list: &Vec<WfData>) -> Result<(), EvalError> {
@@ -17,13 +19,14 @@ fn assert_args_count(expected_size: usize, list: &Vec<WfData>) -> Result<(), Eva
     }
 }
 
-///NOTE: branches should evaluate their output as appropriate
+///NOTE: branches are free to not evaluate their generated output (as long as it is a progression toward the result)
 pub fn dispatch_builtins(
     function_zid: Zid,
     call: &WfFunctionCall,
     context: &ExecutionContext,
-) -> Result<WfData, EvalError> {
+) -> Result<(WfData, bool, MaybeVec<TraceEntry>), EvalError> {
     //TODO: proper error tracing.
+    //TODO: only evaluate necessary input (for when some are discarded, such as the if function)
     let mut args_evaluated = Vec::new();
     for (pos, arg) in call.0.args.iter().enumerate() {
         args_evaluated.push(arg.clone().evaluate(context).map_err(|(e, _)| {
@@ -41,7 +44,7 @@ pub fn dispatch_builtins(
             let r#then = args_evaluated.pop().unwrap();
             let boolean =
                 WfBoolean::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
-            return logic::if_function(boolean, r#then, r#else, context);
+            return Ok(logic::if_function(boolean, r#then, r#else));
         }
         811 => {
             assert_args_count(1, &args_evaluated)?;
@@ -56,7 +59,11 @@ pub fn dispatch_builtins(
                 .map_err(|(e, _)| e.inside_key(keyindex!(844, 2)))?;
             let bool1 = WfBoolean::parse(args_evaluated.pop().unwrap(), context)
                 .map_err(|(e, _)| e.inside_key(keyindex!(844, 1)))?;
-            return Ok(boolean::boolean_equality(bool1, bool2).into_wf_data());
+            return Ok((
+                boolean::boolean_equality(bool1, bool2).into_wf_data(),
+                false,
+                MaybeVec::default(),
+            ));
         }
         866 => {
             assert_args_count(2, &args_evaluated)?;
@@ -64,7 +71,11 @@ pub fn dispatch_builtins(
                 WfString::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
             let string1 =
                 WfString::parse(args_evaluated.pop().unwrap(), context).map_err(|(e, _)| e)?;
-            return Ok(string::string_equality(string1, string2).into_wf_data());
+            return Ok((
+                string::string_equality(string1, string2).into_wf_data(),
+                false,
+                MaybeVec::default(),
+            ));
         }
         889 => {
             assert_args_count(3, &args_evaluated)?;
@@ -74,7 +85,8 @@ pub fn dispatch_builtins(
                 .map_err(|(e, _)| e.inside_key(keyindex!(889, 2)))?;
             let list1 = WfTypedList::parse(args_evaluated.pop().unwrap(), context)
                 .map_err(|(e, _)| e.inside_key(keyindex!(889, 1)))?;
-            return list::list_equality(list1, list2, equality_function, context);
+            return list::list_equality(list1, list2, equality_function, context)
+                .map(|v| (v.into_wf_data(), true, MaybeVec::default()));
         }
         _ => return Err(EvalError::from_kind(EvalErrorKind::NoBuiltin(function_zid))),
     }

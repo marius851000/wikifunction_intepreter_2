@@ -1,12 +1,13 @@
 use std::fmt::Debug;
 
 use crate::{
-    EvalError, EvalErrorKind, ExecutionContext, KeyIndex, Zid,
+    EvalError, EvalErrorKind, ExecutionContext, KeyIndex, TraceEntry, Zid,
     data_types::{
         WfData,
         types_def::{WfStandardType, WfTypeGeneric},
         util::SubstitutionInfo,
     },
+    util::MaybeVec,
 };
 
 pub trait WfDataType: Debug + Clone {
@@ -31,16 +32,58 @@ pub trait WfDataType: Debug + Clone {
     /// Also need to guarantee the returned data is correct and valid on the first level (but deeper data need to themselve be .evaluate-d). It shouldn’t return a WfUntyped.
     /// It is allowed to return an error if a child is unvalid (still, not a requirement)
     //TODO: should it really return Self on error? not WfData
-    fn evaluate(self, _context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
-        Ok(self.into_wf_data())
+    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, WfData)> {
+        // fast path
+        let (mut new_data, mut should_recurse, mut trace) = self
+            .evaluate_one_step(context)
+            .map_err(|(e, d)| (e, d.into_wf_data()))?;
+        if !should_recurse {
+            return Ok(new_data);
+        }
+
+        // longer path
+        let mut traces = MaybeVec::default();
+        while should_recurse {
+            traces = traces.push(trace);
+            (new_data, should_recurse, trace) = match new_data.evaluate_one_step(context) {
+                Ok(v) => v,
+                Err((mut e, d)) => {
+                    loop {
+                        let trace_group;
+                        (traces, trace_group) = traces.pop();
+                        if let Some(mut trace_group) = trace_group {
+                            loop {
+                                let trace;
+                                (trace_group, trace) = trace_group.pop();
+                                if let Some(trace) = trace {
+                                    e = e.trace(trace);
+                                } else {
+                                    break;
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    return Err((e, d.into_wf_data()));
+                }
+            };
+        }
+
+        Ok(new_data.into_wf_data())
     }
 
-    /*/// like evaluate, but non-recursive.
+    /// like evaluate, but non-recursive.
     /// the Ok boolean is true if further evaluation needs to be done, false if evaluation won’t result in any further transformation.
     ///
-    /// implemations may still do recursion if needed (such as evaluating the boolean of an if function)
-    //TODO: fn evaluate_one_step(self, _context: &ExecutionContext) -> Result<(WfData, bool), (EvalError, Self)>;
-     */
+    /// implemations may still do inner recursion if needed (such as evaluating the boolean of a function call to if, or to perform the extra Try/Catch logic)
+    //TODO: what about should_be_evaluated_before_parsing and the returned boolean? should it still return a boolean (instead of calling said function, maybe with better specification?)
+    fn evaluate_one_step(
+        self,
+        _context: &ExecutionContext,
+    ) -> Result<(WfData, bool, MaybeVec<TraceEntry>), (EvalError, Self)> {
+        Ok((self.into_wf_data(), false, MaybeVec::Empty))
+    }
 
     /// This only return this reference, not recursive reference
     fn get_reference(
@@ -256,10 +299,17 @@ macro_rules! impl_wf_data_type {
                 }
             }
 
-            fn evaluate(self, context: &$crate::ExecutionContext) -> Result<$crate::data_types::WfData, ($crate::EvalError, Self)> {
+            fn evaluate(self, context: &$crate::ExecutionContext) -> Result<$crate::data_types::WfData, ($crate::EvalError, $crate::data_types::WfData)> {
                 match self {
                     $(Self::$variant($inner) =>
-                        $inner.evaluate(context).map_err(|(e, p)| (e, Self::$variant(p))),)+
+                        $inner.evaluate(context),)+
+                }
+            }
+
+            fn evaluate_one_step(self, context: &$crate::ExecutionContext) -> Result<($crate::data_types::WfData, bool, $crate::util::MaybeVec<$crate::TraceEntry>), ($crate::EvalError, Self)> {
+                match self {
+                    $(Self::$variant($inner) =>
+                        $inner.evaluate_one_step(context).map_err(|(e, p)| (e, Self::$variant(p))),)+
                 }
             }
 

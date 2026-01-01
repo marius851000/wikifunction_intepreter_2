@@ -5,6 +5,8 @@ use crate::{
         types_def::{WfTypeGeneric, WfTypedListType},
         util::SubstitutionInfo,
     },
+    eval_error::TraceEntry,
+    util::MaybeVec,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -193,7 +195,11 @@ impl WfDataType for WfTypedList {
         }
     }
 
-    fn evaluate(self, context: &ExecutionContext) -> Result<WfData, (EvalError, Self)> {
+    fn evaluate_one_step(
+        self,
+        context: &ExecutionContext,
+    ) -> Result<(WfData, bool, MaybeVec<TraceEntry>), (EvalError, Self)> {
+        //TODO: should this evaluate type stay in here?
         if let MaybeEvaluated::Unchecked(_) = &*self.inner_type {
             // two level so we avoid this useless clone if already checked
             if let MaybeEvaluated::Unchecked(type_unchecked) = (*self.inner_type).clone() {
@@ -207,17 +213,21 @@ impl WfDataType for WfTypedList {
                     Err((e, _)) => return Err((e.inside_key(keyindex!(1, 1)), self)),
                 };
 
-                Ok((Self {
-                    inner: self.inner,
-                    inner_type: RcI::new(MaybeEvaluated::Valid(checked_type)),
-                    start_position: self.start_position,
-                })
-                .into_wf_data())
+                Ok((
+                    Self {
+                        inner: self.inner,
+                        inner_type: RcI::new(MaybeEvaluated::Valid(checked_type)),
+                        start_position: self.start_position,
+                    }
+                    .into_wf_data(),
+                    false,
+                    MaybeVec::default(),
+                ))
             } else {
                 unreachable!();
             }
         } else {
-            Ok(self.into_wf_data())
+            Ok((self.into_wf_data(), false, MaybeVec::default()))
         }
     }
 
